@@ -1,0 +1,179 @@
+        /* --- Color Palette (Sakura Editor Inspired) --- */
+        :root {
+            --background: #FFFBF0;
+            --foreground: #000000;       /* サクラ背景 */
+            --secondary: #F0F0F0;
+            --secondary-foreground: #000000;    /* サイドバー */
+            --primary: #0000FF;
+            --primary-foreground: #ffffff;        /* 行番号ブルー */
+            --border: #D7D7D7;        /* 境界線 */
+            --selection: #3399FF30;   /* 選択背景 */
+            --done: #AAAAAA;
+            --card: #FFFBF0;
+            --card-foreground: #000000;
+            --popover: #FFFBF0;
+            --popover-foreground: #000000;
+            --destructive: #AA3731;
+            --destructive-foreground: #ffffff;          /* コメントグレー */
+            --ring: #4B83CD;
+            --muted: #F0F0F0;
+            --muted-foreground: #AAAAAA;
+            --accent: #3399FF15;
+            --accent-foreground: #000000;         /* キーワードブルー */
+            --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        * { box-sizing: border-box; }
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: var(--font-mono);
+            background-color: var(--background);
+            color: var(--foreground);
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        /* --- Layout --- */
+        .container {
+            display: grid;
+            grid-template-columns: 200px 1fr 1.2fr;
+            height: 100vh;
+        }
+
+        aside, main {
+            height: 100%;
+            overflow-y: auto;
+            border-right: 1px solid var(--border);
+        }
+
+        /* --- Sidebar --- */
+        .sidebar { background-color: var(--secondary); padding: 10px; }
+        .sidebar h2 { font-size: 11px; color: var(--ring); margin: 15px 0 5px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 2px; }
+        .nav-item { padding: 6px 10px; cursor: pointer; border-radius: 2px; font-size: 13px; }
+        .nav-item:hover { background: var(--accent); }
+        
+        .inbox-area { margin-top: 20px; }
+        .inbox-input {
+            width: 100%; padding: 8px; 
+            border: 1px solid var(--border); background: var(--background);
+            margin-bottom: 5px; font-family: var(--font-mono);
+        }
+        .inbox-item {
+            padding: 5px 8px; font-size: 13px; border-bottom: 1px dotted var(--border);
+            cursor: move; position: relative; display: flex; align-items: center;
+        }
+        .inbox-item:hover { background: var(--accent); }
+
+        /* --- Main Content --- */
+        .main-content { padding: 0; display: flex; flex-direction: column; }
+        .toolbar {
+            padding: 10px; border-bottom: 1px solid var(--border);
+            background: var(--secondary); display: flex; justify-content: space-between; align-items: center;
+        }
+        .toolbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toolbar-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .task-list { flex: 1; padding: 10px; }
+        
+        .task-item {
+            display: flex; align-items: center; padding: 8px;
+            margin-bottom: 2px; border: 1px solid transparent; cursor: pointer;
+        }
+        .task-item:hover { background: var(--accent); }
+        .task-item.active { background: var(--selection); border-color: var(--primary); }
+        .task-item.done { color: var(--done); }
+        .task-item.delegated { border-left: 4px solid var(--destructive); }
+        
+        .task-checkbox { margin-right: 10px; cursor: pointer; width: 16px; height: 16px; flex-shrink: 0; }
+        .task-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .task-deadline { font-size: 11px; color: var(--destructive); margin-left: 10px; flex-shrink: 0; }
+
+        /* --- Right Panel --- */
+        .right-panel { display: flex; flex-direction: column; border-right: none; }
+        .panel-header {
+            padding: 8px 10px; background: var(--secondary);
+            border-bottom: 1px solid var(--border); font-size: 12px; font-weight: bold;
+        }
+        .editor-container { flex: 2; display: flex; flex-direction: column; position: relative; min-height: 200px; }
+        #editor, #preview {
+            flex: 1; padding: 15px; width: 100%; border: none; outline: none;
+            background: var(--background); line-height: 1.6; font-size: 15px;
+        }
+        #editor { font-family: var(--font-mono); resize: none; }
+        #preview { overflow-y: auto; display: none; }
+        #preview.active { display: block; }
+        
+        .link-container { flex: 1; border-top: 1px solid var(--border); padding: 10px; overflow-y: auto; }
+        .link-group { margin-bottom: 15px; }
+        .link-group h3 { font-size: 11px; color: var(--ring); margin: 0 0 5px; border-bottom: 1px solid var(--border); }
+        .link-item-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+        .link-item { font-size: 13px; color: var(--primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .link-item:hover { text-decoration: underline; }
+        .link-delete { color: var(--destructive); cursor: pointer; font-size: 10px; margin-left: 5px; opacity: 0.5; }
+        .link-delete:hover { opacity: 1; }
+
+        /* --- Utility UI --- */
+        .btn {
+            background: var(--secondary); border: 1px solid var(--border);
+            padding: 4px 12px; cursor: pointer; font-size: 12px; border-radius: 2px;
+        }
+        .btn:hover { background: var(--accent); }
+        .btn-primary { color: var(--primary); font-weight: bold; border-color: var(--primary); }
+
+        .context-menu {
+            position: fixed; background: var(--secondary); border: 1px solid var(--border);
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.15); z-index: 2000; padding: 4px 0;
+            display: none; border-radius: 2px;
+        }
+        .menu-item { padding: 6px 20px; cursor: pointer; font-size: 13px; }
+        .menu-item:hover { background: var(--primary); color: white; }
+
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+            z-index: 3000; display: none;
+        }
+        .modal-content {
+            background: var(--background); padding: 20px; border-radius: 4px; width: 550px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.4); border: 1px solid var(--border);
+            position: relative; /* 子要素の配置基準 */
+        }
+
+        /* Periodic Task UI Styles */
+        .periodic-list { max-height: 250px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border); }
+        .periodic-item { 
+            display: flex; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);
+            font-size: 13px; gap: 10px;
+        }
+        .periodic-item:last-child { border-bottom: none; }
+        .periodic-info { flex: 1; }
+        .periodic-days { font-size: 11px; color: var(--ring); margin-top: 2px; }
+        .day-chip-container { display: flex; gap: 3px; margin-top: 10px; }
+        .day-checkbox { display: none; }
+        .day-label { 
+            padding: 3px 6px; border: 1px solid var(--border); font-size: 11px; cursor: pointer;
+            border-radius: 2px; user-select: none;
+        }
+        .day-checkbox:checked + .day-label { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        /* Markdown Preview Styles */
+        #preview h1, #preview h2 { color: var(--destructive); border-bottom: 1px solid var(--border); margin: 20px 0 10px; padding-bottom: 5px; }
+        #preview code { background: var(--secondary); color: #AB6526; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; font-family: var(--font-mono); }
+        #preview pre { background: #F5F5F5; padding: 10px; border: 1px solid var(--border); border-radius: 4px; overflow-x: auto; margin: 10px 0; }
+        #preview pre code { background: transparent; padding: 0; color: var(--foreground); }
+        #preview a { color: var(--primary); text-decoration: none; }
+        #preview a:hover { text-decoration: underline; }
+
+        .hidden { display: none !important; }
+
+        /* Scrollbar Sakura Style */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--ring); }

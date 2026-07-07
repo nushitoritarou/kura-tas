@@ -1,0 +1,31 @@
+{
+  "name": "kura-tas",
+  "version": "1.0.0",
+  "description": "エンジニアによる、エンジニアのための、爆速ナレッジ融合型タスク管理ツール。",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run type-check && npm run lint:types && vite build",
+    "build:debug": "npm run type-check && npm run lint:types && vite build --mode debug",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "lint:types": "depcruise src --config .dependency-cruiser.js --output-type err",
+    "lint:types:graph": "depcruise src --config .dependency-cruiser.js --output-type dot > dependency-graph.dot"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/wicg-file-system-access": "^2023.10.7",
+    "@vitest/coverage-v8": "^4.1.9",
+    "dependency-cruiser": "^17.4.3",
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.13",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.8"
+  }
+}

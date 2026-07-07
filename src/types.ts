@@ -1,0 +1,69 @@
+export interface Note {
+  id: string;      // ファイル名（プレフィックス付き）
+  title: string;   // フロントマターの title
+  body: string;    // フロントマターを除いた本文
+  date: string;    // 関連する日付
+  type: 'task' | 'daily';
+  taskId?: string; // タスクノートの場合のみ
+}
+
+export interface NoteMetadata {
+  id: string;
+  title: string;
+  updatedAt: string;
+}
+
+export interface Task {
+  id: string;
+  text: string;
+  done: boolean;
+  delegated?: boolean;
+  deadline?: string;
+  noteId?: string;
+  periodicId?: string;
+  originalDate: string; // 生成時の日付（手動移動の判定に使用）
+  date: string; // タスクが属する日付（例: "2024-06-01"）
+}
+
+export interface InboxItem {
+  id: string;
+  text: string;
+}
+
+export interface CommonLink {
+  id: string;
+  title: string;
+  url: string;
+}
+
+export interface UIState {
+  isAppReady: boolean;    // セットアップが完了し、メイン画面を表示すべきか
+  lastDirName: string | null; // 再開用に表示するディレクトリ名
+  currentDate: string;    // 表示中の日付 (YYYY-MM-DD)
+  lastKnownToday: string; // 最後に確認した「今日」の日付 (YYYY-MM-DD)
+  activeTaskId: string | null; // 選択中のタスクID
+  isEditMode: boolean;    // ノートの編集/プレビュー切り替え
+  version: string;
+  debugMode: boolean;
+}
+
+export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+
+export interface Config {
+  carryOverDays?: number;
+  historyLimit?: number;
+  logLevel?: LogLevel;
+  enableFileLog?: boolean;
+  logFilePath?: string;
+}
+
+export interface PeriodicTask {
+  id: string;
+  text: string;
+  days: number[]; // 0-6
+}
+
+declare global {
+  const __APP_VERSION__: string;
+  const __DEBUG_MODE__: boolean;
+}

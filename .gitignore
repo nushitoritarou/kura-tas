@@ -1,0 +1,32 @@
+# kura-tas ignores
+GEMINI.md
+.gemini/
+issues/
+bin/
+tmp/
+flows-docs/
+
+# Node.js
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Vite/Build
+coverage/
+*.local
+dist-ssr/
+*.tsbuildinfo
+dependency-graph.dot
+dependency-graph.svg
+
+# OS
+.DS_Store
+Thumbs.db

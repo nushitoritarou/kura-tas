@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kura-Tas v2.8 - Sakura Edition</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg width='21' height='21' viewBox='0 0 21 21' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0.500137 4.53851L2.50014 3.73851M20.5001 4.53851L18.5001 3.73851M2.50014 3.73851L10.5001 0.538513L18.5001 3.73851M2.50014 3.73851V19.5385H18.5001V3.73851M8.50014 5.53851H12.5001V8.53851H8.50014V5.53851Z' stroke='%23303030' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+
+    <!-- Setup Screen -->
+    <div id="setup-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--background); z-index:4000; display:flex; align-items:center; justify-content:center;">
+        <div style="text-align:center; padding:50px; border:1px solid var(--border); background:var(--secondary); box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            <div style="margin-bottom: 20px;">
+                <svg width="64" height="64" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" style="stroke: var(--destructive);">
+                    <path d="M0.500137 4.53851L2.50014 3.73851M20.5001 4.53851L18.5001 3.73851M2.50014 3.73851L10.5001 0.538513L18.5001 3.73851M2.50014 3.73851V19.5385H18.5001V3.73851M8.50014 5.53851H12.5001V8.53851H8.50014V5.53851Z" stroke="currentColor" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h1 style="color:var(--destructive); margin-top:0;">Kura-Tas v2.8</h1>
+            <p style="color:var(--ring);">Sakura Edition</p>
+            <div style="font-size: 11px; color: var(--muted-foreground); margin-bottom: 20px;">
+                <span class="app-version">Version: --</span>
+            </div>
+            <button class="btn btn-primary" id="btn-setup" style="padding:15px 40px; font-size:1.1rem;">ディレクトリを開く</button>
+            <div id="resume-container" class="hidden">
+                <p style="margin-top:30px; font-size: 13px;">前回: <b id="last-dir-name" style="color:var(--primary);"></b></p>
+                <button class="btn" id="btn-resume" style="background: #28a745; color:white; border:none; padding:10px 30px;">再開</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container hidden" id="app-container">
+        <!-- A. Left Sidebar -->
+        <aside class="sidebar">
+            <div style="display:flex; align-items:center; gap:8px; padding:5px 10px; border-bottom:1px solid var(--border); margin-bottom:10px;">
+                <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" style="stroke: var(--ring);">
+                    <path d="M0.500137 4.53851L2.50014 3.73851M20.5001 4.53851L18.5001 3.73851M2.50014 3.73851L10.5001 0.538513L18.5001 3.73851M2.50014 3.73851V19.5385H18.5001V3.73851M8.50014 5.53851H12.5001V8.53851H8.50014V5.53851Z" stroke="currentColor" stroke-linecap="round"/>
+                </svg>
+                <span style="font-weight:bold; font-size:12px; color:var(--ring);">KURA-TAS</span>
+            </div>
+            <h2>Navigation</h2>
+            <div class="nav-item" id="nav-today">🏠 今日</div>
+            <div class="nav-item" id="nav-calendar">📅 カレンダー (WIP)</div>
+            <div class="nav-item" id="nav-periodic">⚙ 定期タスク</div>
+            <div class="nav-item" id="nav-import">📥 タスク読込 (AI連携)</div>
+
+            <div class="inbox-area">
+                <h2>Inbox (Stock)</h2>
+                <input type="text" class="inbox-input" id="inbox-input" placeholder="思いつきをメモ...">
+                <div id="inbox-list"></div>
+            </div>
+        </aside>
+
+        <!-- B. Central Main -->
+        <main class="main-content">
+            <div class="toolbar">
+                <div class="toolbar-nav">
+                    <button class="btn" id="btn-prev-day">◀</button>
+                    <h1 id="current-date-display" style="margin:0; font-size:1.1rem; cursor:pointer;" title="日付メモを開く">2026-05-09 (土)</h1>
+                    <button class="btn" id="btn-next-day">▶</button>
+                </div>
+                <div class="toolbar-actions">
+                    <button class="btn" id="btn-undo" title="元に戻す (Ctrl+Z)" disabled>↩</button>
+                    <button class="btn" id="btn-redo" title="やり直す (Ctrl+Y)" disabled>↪</button>
+                </div>
+            </div>
+            <div id="task-op-toolbar" style="padding: 5px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 5px;">
+                <button class="btn" id="btn-carry-over" title="過去の未完了タスクを今日に引き継ぎます" style="font-size: 11px;">📥 過去の未完了を引き継ぐ</button>
+            </div>
+            <div class="task-list" id="task-list"></div>
+        </main>
+
+        <!-- C. Right Panel -->
+        <aside class="right-panel">
+            <div class="panel-header" id="panel-title">Knowledge Context</div>
+            <div class="editor-container">
+                <div class="toolbar" style="padding:5px; background: var(--background);">
+                    <button class="btn" id="btn-toggle-view" title="Ctrl+P">👀 プレビュー (Ctrl+P)</button>
+                    <button class="btn" id="btn-save-note" title="Ctrl+S">💾 保存 (Ctrl+S)</button>
+                    <span id="save-status" style="font-size:10px; color:var(--done); margin-left:auto;"></span>
+                </div>
+                <textarea id="editor" spellcheck="false" placeholder="タスクを選択してメモを入力..."></textarea>
+                <div id="preview"></div>
+            </div>
+            <div class="link-container">
+                <div class="link-group">
+                    <h3>Common Links</h3>
+                    <div id="global-links"></div>
+                    <div style="display:flex; gap:2px; margin-top:8px;">
+                        <input type="text" class="inbox-input" id="link-add-title" placeholder="タイトル" style="font-size:11px; flex:1; margin:0;">
+                        <input type="text" class="inbox-input" id="link-add-url" placeholder="URL" style="font-size:11px; flex:2; margin:0;">
+                        <button class="btn" id="btn-add-link" style="padding:2px 8px;">＋</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu"></div>
+
+    <!-- Modal Import -->
+    <div id="modal-import" class="modal">
+        <div class="modal-content">
+            <h3>タスクを一括読込 (AI連携)</h3>
+            <div style="background:var(--secondary); padding:10px; font-size:11px; border:1px solid var(--border); position:relative; margin-bottom:10px;">
+                <pre id="import-sample">[
+  {"text": "要件定義の確認", "deadline": "2026-05-10"},
+  {"text": "API設計のレビュー", "delegated": true}
+]</pre>
+                <button class="btn" id="btn-copy-sample" style="position:absolute; top:5px; right:5px; font-size:10px;">コピー</button>
+            </div>
+            <textarea id="import-area" style="width:100%; height:150px; font-family:var(--font-mono); padding:10px; border:1px solid var(--border);" placeholder="ここにAIの回答を貼り付け..."></textarea>
+            <div style="margin-top:15px; text-align:right;">
+                <button class="btn" id="btn-close-import">キャンセル</button>
+                <button class="btn btn-primary" id="btn-do-import">インポート</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Periodic -->
+    <div id="modal-periodic" class="modal">
+        <div class="modal-content">
+            <h3>⚙ 定期タスク管理 (Master)</h3>
+            <div class="periodic-list" id="periodic-list">
+                <!-- Items populated by JS -->
+            </div>
+            
+            <div style="border-top: 1px solid var(--border); padding-top: 15px;">
+                <h4 id="periodic-modal-title" style="margin: 0 0 10px; font-size: 13px;">新規登録</h4>
+                <input type="text" id="periodic-new-text" class="inbox-input" placeholder="タスク名を入力...">
+                <div class="day-chip-container">
+                    <input type="checkbox" id="day-0" class="day-checkbox" value="0"><label for="day-0" class="day-label">日</label>
+                    <input type="checkbox" id="day-1" class="day-checkbox" value="1"><label for="day-1" class="day-label">月</label>
+                    <input type="checkbox" id="day-2" class="day-checkbox" value="2"><label for="day-2" class="day-label">火</label>
+                    <input type="checkbox" id="day-3" class="day-checkbox" value="3"><label for="day-3" class="day-label">水</label>
+                    <input type="checkbox" id="day-4" class="day-checkbox" value="4"><label for="day-4" class="day-label">木</label>
+                    <input type="checkbox" id="day-5" class="day-checkbox" value="5"><label for="day-5" class="day-label">金</label>
+                    <input type="checkbox" id="day-6" class="day-checkbox" value="6"><label for="day-6" class="day-label">土</label>
+                </div>
+                <div style="margin-top:15px; text-align:right;">
+                    <button class="btn" id="btn-close-periodic">閉じる</button>
+                    <button class="btn btn-primary" id="btn-add-periodic">登録する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
