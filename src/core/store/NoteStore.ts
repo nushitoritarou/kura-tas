@@ -1,6 +1,7 @@
 import { DirectoryStore } from '@/core/store/BaseStore';
 import { storage } from '@/core/storage';
 import { NoteMetadata, Note } from '@/types';
+import { logger } from '@/core/logger';
 
 export interface NoteStoreState {
     metadata: NoteMetadata[];
@@ -64,8 +65,13 @@ export class NoteStore extends DirectoryStore<NoteStoreState> {
     }
 
     async load() {
-        // notes/ フォルダをスキャンし、メタデータ（一覧）のみを構築する
-        const entries = await storage.listDirWithMeta(this.dirName);
+        let entries: { name: string, lastModified: number }[] = [];
+        try {
+            // notes/ フォルダをスキャンし、メタデータ（一覧）のみを構築する
+            entries = await storage.listDirWithMeta(this.dirName);
+        } catch (e) {
+            logger.warn(`[NoteStore] Directory ${this.dirName} not found.`);
+        }
         
         const metadata = entries
             .filter(e => e.name.endsWith('.md'))

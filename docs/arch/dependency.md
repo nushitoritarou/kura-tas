@@ -7,6 +7,7 @@
 これらのルールは `.dependency-cruiser.js` によって定義されており、ビルドプロセスやCI時に検証されます。
 - `npm run lint:types`: ビルドを伴わずに依存関係の違反がないかチェックします。
 - `npm run build`: ビルドプロセスの一環として自動的にチェックを実行します。
+- **テストコードの例外**: テストファイル（`*.test.ts`）は、テスト対象である同一ディレクトリ内の本体コードへの参照が例外的に許容されます。
 
 ## 3. 依存マトリックス
 
@@ -19,7 +20,7 @@
 | **Core API** | `src/core/logger/*.ts` | 全ファイル | `src/types.ts`, `src/core/storage.ts` |
 | **Input Map** | `src/core/el.ts` | renderer, main | (なし) |
 | **Shared UI Util**| `src/shared/utils/ui/*.ts` | ui (features/shared) | (なし) |
-| **Shared DOM Util**| \`src/shared/utils/dom/*.ts\` | renderer (features/shared) | \`src/types.ts\` |
+| **Shared DOM Util**| \`src/shared/utils/dom/*.ts\` | renderer (features/shared) | (なし) |
 | **Feature UI** | `src/features/x/ui.ts` | `features/x/renderer` | `src/types.ts`, `shared/utils/ui` |
 | **Feature View** | `src/features/x/renderer.ts`| `main.ts` | `src/types.ts`, `engine`, `el`, `ui` (同一機能), \`shared/utils/dom\` |
 | **Feature Biz** | `src/features/x/logic.ts` | `main.ts` | `src/types.ts`, `engine`, `store` |
