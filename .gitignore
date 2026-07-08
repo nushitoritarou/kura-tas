@@ -1,6 +1,7 @@
 # kura-tas ignores
 GEMINI.md
 .gemini/
+.agents/
 issues/
 bin/
 tmp/
