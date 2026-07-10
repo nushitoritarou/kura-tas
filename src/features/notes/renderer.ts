@@ -1,14 +1,16 @@
 import { Note } from '@/types';
-import { getToggleBtnLabel, createPanelTitle, parseToHtml } from './ui';
+import { getToggleBtnLabel, createPanelTitle, parseToHtml, getDisplayTitle } from './ui';
 import { el } from '@/core/el';
 
 /** Note オブジェクトを画面に反映する */
-export function renderNoteArea(note: Note, isEditMode: boolean): void {
+export function renderNoteArea(note: Note, isEditMode: boolean, taskText?: string): void {
     const { editor, preview, panelTitle, btnToggleView } = el.notes;
 
     editor.value = note.body;
     preview.innerHTML = parseToHtml(note.body);
-    panelTitle.textContent = createPanelTitle(note.title, note.type);
+    
+    const displayTitle = getDisplayTitle(note.type, taskText, note.date);
+    panelTitle.textContent = createPanelTitle(displayTitle, note.type);
     btnToggleView.textContent = getToggleBtnLabel(isEditMode);
 
     editor.style.display = isEditMode ? 'block' : 'none';
