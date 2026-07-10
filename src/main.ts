@@ -3,6 +3,7 @@
  * 各機能のLogicとRendererを配線（Wiring）するオーケストレーション層。
  */
 
+import { Note } from '@/types';
 import { StoreRegistry } from '@/core/store';
 import { el } from '@/core/el';
 import { storage } from '@/core/storage';
@@ -78,7 +79,7 @@ store.onCommit(async (dirty) => {
 
     if (dirty.has('notes') || dirty.has('ui') || dirty.has('tasks')) {
         const note = await notesLogic.getActiveNote({ notes: store.notes, ui: store.ui, tasks: store.tasks });
-        notesRenderer.renderNoteArea(note, uiState.isEditMode);
+        renderActiveNote(note, uiState.isEditMode);
     }
 
     // Undo/Redoボタンの状態同期
@@ -99,8 +100,19 @@ async function initialRender() {
     tasksRenderer.renderTaskList(dayTasks, uiState.activeTaskId || undefined);
     tasksRenderer.updateCarryOverButtonVisibility(uiState.currentDate);
     const note = await notesLogic.getActiveNote({ notes: store.notes, ui: store.ui, tasks: store.tasks });
-    notesRenderer.renderNoteArea(note, uiState.isEditMode);
+    renderActiveNote(note, uiState.isEditMode);
     globalRenderer.updateUndoRedoButtons(store.canUndo(), store.canRedo());
+}
+
+/**
+ * アクティブノートとその関連データをレンダラーに送るヘルパー
+ */
+function renderActiveNote(note: Note, isEditMode: boolean) {
+    let taskText: string | undefined;
+    if (note.type === 'task' && note.taskId) {
+        taskText = store.tasks.getState().find(t => t.id === note.taskId)?.text;
+    }
+    notesRenderer.renderNoteArea(note, isEditMode, taskText);
 }
 
 /**
