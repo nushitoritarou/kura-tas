@@ -3,7 +3,7 @@ import { TaskStore } from '@/core/store/TaskStore';
 import { InboxItemStore } from './InboxItemStore';
 import { NoteStore } from './NoteStore';
 import { CommonLinkStore } from './CommonLinkStore';
-import { PeriodicStore } from './PeriodicStore';
+import { RoutineStore } from './RoutineStore';
 import { UIStore } from './UIStore';
 import { HandleStore } from './HandleStore';
 import { logger } from '@/core/logger';
@@ -30,7 +30,7 @@ export class StoreRegistry {
     readonly config = new ConfigStore();
     readonly notes = new NoteStore();
     readonly commonLinks = new CommonLinkStore();
-    readonly periodic = new PeriodicStore();
+    readonly periodic = new RoutineStore();
     readonly ui = new UIStore();
     readonly handle = new HandleStore();
 

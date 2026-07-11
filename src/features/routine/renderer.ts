@@ -1,10 +1,10 @@
-import { PeriodicTask } from '@/types';
+import { RoutineTask, DAYS_MAP } from '@/types';
 import { createMasterListHtml, getFormTitle, getSubmitBtnLabel } from './ui';
 import { el } from '@/core/el';
 import { patch } from '@/shared/utils/dom/diff';
 
 /** マスタ一覧を画面に反映する */
-export function renderMasterList(masters: PeriodicTask[]): void {
+export function renderMasterList(masters: RoutineTask[]): void {
     const html = createMasterListHtml(masters);
     patch(el.modals.periodic.list, html);
 }
@@ -15,7 +15,7 @@ export function togglePeriodicModal(show: boolean): void {
 }
 
 /** フォームの状態をリセットまたは設定する */
-export function setupPeriodicForm(isEdit: boolean, data?: PeriodicTask): void {
+export function setupPeriodicForm(isEdit: boolean, data?: RoutineTask): void {
     const { title, btnSubmit, input, dayCheckboxes } = el.modals.periodic;
     
     title.textContent = getFormTitle(isEdit);
@@ -24,7 +24,11 @@ export function setupPeriodicForm(isEdit: boolean, data?: PeriodicTask): void {
     if (data) {
         input.value = data.text;
         dayCheckboxes.forEach(cb => {
-            cb.checked = data.days.includes(parseInt(cb.value));
+            const dayStr = DAYS_MAP[parseInt(cb.value)];
+            cb.checked = data.schedule && 
+                         data.schedule.type === 'weekly' && 
+                         data.schedule.days && 
+                         data.schedule.days.includes(dayStr) ? true : false;
         });
         btnSubmit.dataset.id = data.id;
     } else {

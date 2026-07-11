@@ -1,7 +1,7 @@
 import type { ConfigStore } from '@/core/store/ConfigStore';
 import type { CommonLinkStore } from '@/core/store/CommonLinkStore';
 import type { InboxItemStore } from '@/core/store/InboxItemStore';
-import type { PeriodicStore } from '@/core/store/PeriodicStore';
+import type { RoutineStore } from '@/core/store/RoutineStore';
 import type { UIStore } from '@/core/store/UIStore';
 import type { HandleStore } from '@/core/store/HandleStore';
 import type { TaskStore } from '@/core/store/TaskStore';
@@ -16,7 +16,7 @@ export interface GlobalDeps {
     config: ConfigStore;
     commonLinks: CommonLinkStore;
     inboxItems: InboxItemStore;
-    periodic: PeriodicStore;
+    periodic: RoutineStore;
     ui: UIStore;
     handle: HandleStore;
     tasks: TaskStore;

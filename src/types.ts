@@ -57,11 +57,20 @@ export interface Config {
   logFilePath?: string;
 }
 
-export interface PeriodicTask {
+export type DayOfWeekStr = 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat';
+export const DAYS_MAP: DayOfWeekStr[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+export interface RoutineTask {
   id: string;
   text: string;
-  days: number[]; // 0-6
+  schedule: {
+    type: 'weekly' | 'none';
+    days?: DayOfWeekStr[];
+  };
+  lastGenerated?: string;
 }
+
+export type PeriodicTask = RoutineTask;
 
 declare global {
   const __APP_VERSION__: string;
