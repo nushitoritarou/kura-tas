@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { upsertMaster, generateTasksFromPeriodic, getMasters, deleteMaster } from '../logic';
-import { PeriodicStore } from '@/core/store/PeriodicStore';
+import { upsertMaster, generateTasksFromRoutine, getMasters, deleteMaster, createTaskFromRoutine } from '../logic';
+import { RoutineStore } from '@/core/store/RoutineStore';
 import { TaskStore } from '@/core/store/TaskStore';
 import { UIStore } from '@/core/store/UIStore';
 
@@ -13,8 +13,8 @@ vi.mock('@/core/engine/datetime', () => ({
     }),
 }));
 
-describe('periodic logic', () => {
-    let periodic: PeriodicStore;
+describe('routine logic', () => {
+    let periodic: RoutineStore;
     let tasks: TaskStore;
     let ui: UIStore;
 
@@ -42,7 +42,7 @@ describe('periodic logic', () => {
 
     describe('getMasters', () => {
         it('マスタ一覧を返すこと', async () => {
-            const mockData = [{ id: '1', text: 'T1', days: [1] }];
+            const mockData = [{ id: '1', text: 'T1', schedule: { type: 'weekly' as const, days: ['Mon' as const] } }];
             periodic.getState = vi.fn().mockReturnValue(mockData);
             const result = await getMasters({ periodic });
             expect(result).toBe(mockData);
@@ -50,25 +50,37 @@ describe('periodic logic', () => {
     });
 
     describe('upsertMaster', () => {
-        it('IDがない場合、新規追加すること', async () => {
-            await upsertMaster({ text: 'New', days: [1] }, { periodic, tasks, ui });
+        it('IDがない場合、かつ曜日がある場合、weeklyスケジュールで新規追加すること', async () => {
+            await upsertMaster({ text: 'New', days: ['Mon'] }, { periodic, tasks, ui });
             expect(periodic.add).toHaveBeenCalled();
             const saved = (periodic.add as any).mock.calls[0][0];
             expect(saved.text).toBe('New');
-            expect(saved.days).toEqual([1]);
+            expect(saved.schedule).toEqual({ type: 'weekly', days: ['Mon'] });
+        });
+
+        it('曜日が指定されていない場合、noneスケジュールで新規追加すること', async () => {
+            await upsertMaster({ text: 'New', days: [] }, { periodic, tasks, ui });
+            expect(periodic.add).toHaveBeenCalled();
+            const saved = (periodic.add as any).mock.calls[0][0];
+            expect(saved.text).toBe('New');
+            expect(saved.schedule).toEqual({ type: 'none', days: undefined });
         });
 
         it('IDがある場合、更新すること', async () => {
-            const oldItem = { id: '1', text: 'Old', days: [1] };
+            const oldItem = { id: '1', text: 'Old', schedule: { type: 'weekly' as const, days: ['Mon' as const] } };
             periodic.find = vi.fn().mockReturnValue(oldItem);
-            await upsertMaster({ id: '1', text: 'New', days: [2] }, { periodic, tasks, ui });
-            expect(periodic.update).toHaveBeenCalledWith({ id: '1', text: 'New', days: [2] });
+            await upsertMaster({ id: '1', text: 'New', days: ['Tue'] }, { periodic, tasks, ui });
+            expect(periodic.update).toHaveBeenCalledWith({
+                id: '1',
+                text: 'New',
+                schedule: { type: 'weekly', days: ['Tue'] }
+            });
         });
 
         it('マスタ更新時、当日および未来日の既存タスクが更新されること', async () => {
             const masterId = 'm1';
-            const oldMaster = { id: masterId, text: 'Old Text', days: [1, 2] };
-            const newMasterData = { id: masterId, text: 'New Text', days: [1, 2] };
+            const oldMaster = { id: masterId, text: 'Old Text', schedule: { type: 'weekly' as const, days: ['Mon' as const, 'Tue' as const] } };
+            const newMasterData = { id: masterId, text: 'New Text', days: ['Mon' as const, 'Tue' as const] };
             
             periodic.find = vi.fn().mockReturnValue(oldMaster);
             tasks.getAvailableDates = vi.fn().mockReturnValue(['2026-06-08', '2026-06-09', '2026-06-07']);
@@ -93,12 +105,12 @@ describe('periodic logic', () => {
 
         it('スケジュール変更時、本来の場所に居るタスクは削除され、手動移動したタスクは保護（更新のみ）されること', async () => {
             const masterId = 'm1';
-            const oldMaster = { id: masterId, text: 'Old Text', days: [1, 2] };
-            const newMasterData = { id: masterId, text: 'New Text', days: [1] }; // Tue(2) removed
+            const oldMaster = { id: masterId, text: 'Old Text', schedule: { type: 'weekly' as const, days: ['Mon' as const, 'Tue' as const] } };
+            const newMasterData = { id: masterId, text: 'New Text', days: ['Mon' as const] }; // Tue removed
             
             periodic.find = vi.fn().mockReturnValue(oldMaster);
             tasks.getAvailableDates = vi.fn().mockReturnValue(['2026-06-08', '2026-06-09', '2026-06-10']);
-            // 06-08 is Mon(1), 06-09 is Tue(2), 06-10 is Wed(3)
+            // 06-08 is Mon, 06-09 is Tue, 06-10 is Wed
 
             const taskMon = { id: 't1', text: 'Old Text', date: '2026-06-08', originalDate: '2026-06-08', periodicId: masterId, done: false };
             const taskTue = { id: 't2', text: 'Old Text', date: '2026-06-09', originalDate: '2026-06-09', periodicId: masterId, done: false };
@@ -113,20 +125,16 @@ describe('periodic logic', () => {
 
             await upsertMaster(newMasterData, { periodic, tasks, ui });
 
-            // 月曜(1)はスケジュール継続：テキスト更新
+            // 月曜はスケジュール継続：テキスト更新
             expect(tasks.update).toHaveBeenCalledWith(expect.objectContaining({ id: 't1', text: 'New Text' }));
-            // 火曜(2)はスケジュール廃止：削除
+            // 火曜はスケジュール廃止：削除
             expect(tasks.remove).toHaveBeenCalledWith('t2');
-            // 移動済み(t3)は、元が月曜(1)＝スケジュール継続なのでテキスト更新のみ（削除されない）
+            // 移動済みは元が月曜＝スケジュール継続なのでテキスト更新（削除されない）
             expect(tasks.update).toHaveBeenCalledWith(expect.objectContaining({ id: 't3', text: 'New Text' }));
         });
 
         it('タスク名がない場合にエラーを投げること', async () => {
-            await expect(upsertMaster({ text: '', days: [1] }, { periodic, tasks, ui })).rejects.toThrow('タスク名を入力してください');
-        });
-
-        it('曜日がない場合にエラーを投げること', async () => {
-            await expect(upsertMaster({ text: 'Task', days: [] }, { periodic, tasks, ui })).rejects.toThrow('曜日を選択してください');
+            await expect(upsertMaster({ text: '', days: ['Mon'] }, { periodic, tasks, ui })).rejects.toThrow('タスク名を入力してください');
         });
     });
 
@@ -169,11 +177,11 @@ describe('periodic logic', () => {
         });
     });
 
-    describe('generateTasksFromPeriodic', () => {
+    describe('generateTasksFromRoutine', () => {
         it('マスタに基づいてタスクを生成すること', async () => {
-            periodic.getState = vi.fn().mockReturnValue([{ id: '1', text: 'Periodic', days: [1] }]);
-            // 2026-06-08 is Monday (1)
-            await generateTasksFromPeriodic('2026-06-08', { periodic, tasks });
+            periodic.getState = vi.fn().mockReturnValue([{ id: '1', text: 'Periodic', schedule: { type: 'weekly', days: ['Mon'] } }]);
+            // 2026-06-08 is Monday
+            await generateTasksFromRoutine('2026-06-08', { periodic, tasks });
             expect(tasks.addMany).toHaveBeenCalled();
             const saved = (tasks.addMany as any).mock.calls[0][0];
             expect(saved).toHaveLength(1);
@@ -183,8 +191,25 @@ describe('periodic logic', () => {
         });
 
         it('過去日の場合は生成しないこと', async () => {
-            await generateTasksFromPeriodic('2026-06-07', { periodic, tasks });
+            await generateTasksFromRoutine('2026-06-07', { periodic, tasks });
             expect(tasks.addMany).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('createTaskFromRoutine', () => {
+        it('指定した定型マスタから直接タスクを生成し、TaskStore に追加すること', async () => {
+            const master = { id: 'm-1', text: 'Routine Item', schedule: { type: 'none' as const } };
+            periodic.find = vi.fn().mockReturnValue(master);
+
+            await createTaskFromRoutine('m-1', '2026-06-08', { periodic, tasks });
+
+            expect(periodic.find).toHaveBeenCalledWith('m-1');
+            expect(tasks.addMany).toHaveBeenCalled();
+            const added = (tasks.addMany as any).mock.calls[0][0];
+            expect(added).toHaveLength(1);
+            expect(added[0].text).toBe('Routine Item');
+            expect(added[0].periodicId).toBe('m-1');
+            expect(added[0].date).toBe('2026-06-08');
         });
     });
 });
