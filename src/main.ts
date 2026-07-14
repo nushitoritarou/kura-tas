@@ -20,6 +20,8 @@ import * as notesLogic from '@/features/notes/logic';
 import * as notesRenderer from '@/features/notes/renderer';
 import * as periodicLogic from '@/features/routine/logic';
 import * as periodicRenderer from '@/features/routine/renderer';
+import * as holidaysLogic from '@/features/holidays/logic';
+import * as holidaysRenderer from '@/features/holidays/renderer';
 import { DAYS_MAP } from '@/types';
 
 // 1. 全ストアの初期化 (Single Source of Truth)
@@ -149,7 +151,7 @@ async function bootstrap() {
                     await globalLogic.setupStorage(handle, store);
                     // ストレージ初期化後に設定がロードされるため、再度Loggerを構成
                     configureLogger(store.config.getState());
-                    await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { periodic: store.periodic, tasks: store.tasks });
+                    await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
                 }, { recordHistory: false });
                 store.resetHistory(); // 起動直後の状態を「原点」にする
                 globalRenderer.showAppContainer();
@@ -171,7 +173,7 @@ async function bootstrap() {
                         await globalLogic.setupStorage(handle, store);
                         // ストレージ初期化後に設定がロードされるため、再度Loggerを構成
                         configureLogger(store.config.getState());
-                        await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { periodic: store.periodic, tasks: store.tasks });
+                        await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
                     }, { recordHistory: false });
                     store.resetHistory(); // 起動直後の状態を「原点」にする
                     globalRenderer.showAppContainer();
@@ -188,7 +190,7 @@ async function bootstrap() {
     el.nav.btnPrevDay.onclick = async () => {
         await dispatchAction(async () => {
             const nextDate = await globalLogic.shiftCurrentDate(-1, store);
-            await periodicLogic.generateTasksFromRoutine(nextDate, { periodic: store.periodic, tasks: store.tasks });
+            await periodicLogic.generateTasksFromRoutine(nextDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
         }, { recordHistory: false });
         store.resetHistory();
     };
@@ -196,7 +198,7 @@ async function bootstrap() {
     el.nav.btnNextDay.onclick = async () => {
         await dispatchAction(async () => {
             const nextDate = await globalLogic.shiftCurrentDate(1, store);
-            await periodicLogic.generateTasksFromRoutine(nextDate, { periodic: store.periodic, tasks: store.tasks });
+            await periodicLogic.generateTasksFromRoutine(nextDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
         }, { recordHistory: false });
         store.resetHistory();
     };
@@ -204,7 +206,7 @@ async function bootstrap() {
     el.nav.btnToday.onclick = async () => {
         await dispatchAction(async () => {
             const nextDate = await globalLogic.jumpToToday(store);
-            await periodicLogic.generateTasksFromRoutine(nextDate, { periodic: store.periodic, tasks: store.tasks });
+            await periodicLogic.generateTasksFromRoutine(nextDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
         }, { recordHistory: false });
         store.resetHistory();
     };
@@ -510,10 +512,11 @@ async function bootstrap() {
         const days = Array.from(el.modals.periodic.dayCheckboxes)
             .filter(cb => cb.checked)
             .map(cb => DAYS_MAP[parseInt(cb.value)]);
+        const holiday_adjustment = el.modals.periodic.holidayAdjustment.value as 'before' | 'after' | 'skip';
 
         const id = el.modals.periodic.btnSubmit.dataset.id;
         await dispatchAction(async () => {
-            await periodicLogic.upsertMaster({ id, text, days }, { periodic: store.periodic, tasks: store.tasks, ui: store.ui });
+            await periodicLogic.upsertMaster({ id, text, days, holiday_adjustment }, { periodic: store.periodic, tasks: store.tasks, ui: store.ui, config: store.config });
             periodicRenderer.setupPeriodicForm(false);
         });
     };
@@ -532,7 +535,7 @@ async function bootstrap() {
         } else if (target.classList.contains('btn-delete-periodic')) {
             if (globalRenderer.confirmAction('削除しますか？')) {
                 await dispatchAction(async () => {
-                    await periodicLogic.deleteMaster(id, { periodic: store.periodic, tasks: store.tasks });
+                    await periodicLogic.deleteMaster(id, { periodic: store.periodic, tasks: store.tasks, config: store.config });
                     periodicRenderer.setupPeriodicForm(false);
                 });
             }
@@ -577,7 +580,100 @@ async function bootstrap() {
         el.modals.periodic.root.style.display = 'none';
     };
 
-    [el.modals.import.root, el.modals.periodic.root].forEach(m => {
+    if (el.nav.btnHolidays) {
+        el.nav.btnHolidays.onclick = () => {
+            const config = store.config.getState();
+            const workDays = config.workDays || [1, 2, 3, 4, 5];
+            const holidays = config.holidays || [];
+            holidaysRenderer.renderHolidaysSetup(workDays, holidays);
+            holidaysRenderer.toggleHolidaysModal(true);
+        };
+    }
+
+    el.modals.holidays.btnClose.onclick = () => {
+        holidaysRenderer.toggleHolidaysModal(false);
+    };
+
+    const workdayContainer = document.getElementById('holiday-workdays-container');
+    if (workdayContainer) {
+        workdayContainer.onchange = async () => {
+            const workdayCheckboxes = Array.from(el.modals.holidays.workdayCheckboxes);
+            const workDays = workdayCheckboxes
+                .filter(cb => cb.checked)
+                .map(cb => parseInt(cb.value));
+
+            const config = store.config.getState();
+            const holidays = config.holidays || [];
+
+            await dispatchAction(async () => {
+                await holidaysLogic.saveHolidays(workDays, holidays, {
+                    config: store.config
+                });
+                await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
+                    periodic: store.periodic,
+                    tasks: store.tasks,
+                    config: store.config
+                });
+            });
+        };
+    }
+
+    el.modals.holidays.btnAddDate.onclick = async () => {
+        const dateVal = el.modals.holidays.dateInput.value;
+        if (!dateVal) return;
+
+        const config = store.config.getState();
+        const holidays = config.holidays || [];
+        const workDays = config.workDays || [1, 2, 3, 4, 5];
+        
+        // 重複チェック
+        if (holidays.includes(dateVal)) {
+            globalRenderer.notifyError('すでに登録されている日付です。');
+            return;
+        }
+
+        const nextHolidays = [...holidays, dateVal];
+
+        await dispatchAction(async () => {
+            await holidaysLogic.saveHolidays(workDays, nextHolidays, {
+                config: store.config
+            });
+            await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
+                periodic: store.periodic,
+                tasks: store.tasks,
+                config: store.config
+            });
+            holidaysRenderer.renderHolidayList(nextHolidays);
+        });
+    };
+
+    el.modals.holidays.dateList.onclick = async (e) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains('btn-delete-holiday')) {
+            const dateToDelete = target.dataset.date;
+            if (dateToDelete) {
+                const config = store.config.getState();
+                const holidays = config.holidays || [];
+                const workDays = config.workDays || [1, 2, 3, 4, 5];
+
+                const nextHolidays = holidays.filter(h => h !== dateToDelete);
+
+                await dispatchAction(async () => {
+                    await holidaysLogic.saveHolidays(workDays, nextHolidays, {
+                        config: store.config
+                    });
+                    await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
+                        periodic: store.periodic,
+                        tasks: store.tasks,
+                        config: store.config
+                    });
+                    holidaysRenderer.renderHolidayList(nextHolidays);
+                });
+            }
+        }
+    };
+
+    [el.modals.import.root, el.modals.periodic.root, el.modals.holidays.root].forEach(m => {
         m.onclick = (e) => {
             if (e.target === m) m.style.display = 'none';
         };
@@ -597,7 +693,7 @@ async function bootstrap() {
             await dispatchAction(async () => {
                 const updatedDate = await globalLogic.checkAndApplyDayChange(store);
                 if (updatedDate) {
-                    await periodicLogic.generateTasksFromRoutine(updatedDate, { periodic: store.periodic, tasks: store.tasks });
+                    await periodicLogic.generateTasksFromRoutine(updatedDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
                     updated = true;
                 }
             }, { recordHistory: false });
@@ -614,7 +710,7 @@ async function bootstrap() {
             await dispatchAction(async () => {
                 const updatedDate = await globalLogic.checkAndApplyDayChange(store);
                 if (updatedDate) {
-                    await periodicLogic.generateTasksFromRoutine(updatedDate, { periodic: store.periodic, tasks: store.tasks });
+                    await periodicLogic.generateTasksFromRoutine(updatedDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
                     updated = true;
                 }
             }, { recordHistory: false });

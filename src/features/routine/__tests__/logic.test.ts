@@ -5,18 +5,23 @@ import { TaskStore } from '@/core/store/TaskStore';
 import { UIStore } from '@/core/store/UIStore';
 
 // Mock getTodayStr
-vi.mock('@/core/engine/datetime', () => ({
-    getTodayStr: vi.fn().mockReturnValue('2026-06-08'),
-    getDayOfWeek: vi.fn().mockImplementation((dateStr: string) => {
-        const [y, m, d] = dateStr.split('-').map(Number);
-        return new Date(y, m - 1, d).getDay();
-    }),
-}));
+vi.mock('@/core/engine/datetime', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/core/engine/datetime')>();
+    return {
+        ...actual,
+        getTodayStr: vi.fn().mockReturnValue('2026-06-08'),
+        getDayOfWeek: vi.fn().mockImplementation((dateStr: string) => {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            return new Date(y, m - 1, d).getDay();
+        }),
+    };
+});
 
 describe('routine logic', () => {
     let periodic: RoutineStore;
     let tasks: TaskStore;
     let ui: UIStore;
+    let config: any;
 
     beforeEach(() => {
         periodic = {
@@ -37,6 +42,10 @@ describe('routine logic', () => {
         ui = {
             getState: vi.fn().mockReturnValue({ currentDate: '2026-06-08' }),
         } as any;
+        config = {
+            getState: vi.fn().mockReturnValue({ workDays: [1, 2, 3, 4, 5], holidays: [] }),
+            update: vi.fn(),
+        } as any;
         vi.clearAllMocks();
     });
 
@@ -51,7 +60,7 @@ describe('routine logic', () => {
 
     describe('upsertMaster', () => {
         it('IDがない場合、かつ曜日がある場合、weeklyスケジュールで新規追加すること', async () => {
-            await upsertMaster({ text: 'New', days: ['Mon'] }, { periodic, tasks, ui });
+            await upsertMaster({ text: 'New', days: ['Mon'] }, { periodic, tasks, ui, config });
             expect(periodic.add).toHaveBeenCalled();
             const saved = (periodic.add as any).mock.calls[0][0];
             expect(saved.text).toBe('New');
@@ -59,7 +68,7 @@ describe('routine logic', () => {
         });
 
         it('曜日が指定されていない場合、noneスケジュールで新規追加すること', async () => {
-            await upsertMaster({ text: 'New', days: [] }, { periodic, tasks, ui });
+            await upsertMaster({ text: 'New', days: [] }, { periodic, tasks, ui, config });
             expect(periodic.add).toHaveBeenCalled();
             const saved = (periodic.add as any).mock.calls[0][0];
             expect(saved.text).toBe('New');
@@ -69,7 +78,7 @@ describe('routine logic', () => {
         it('IDがある場合、更新すること', async () => {
             const oldItem = { id: '1', text: 'Old', schedule: { type: 'weekly' as const, days: ['Mon' as const] } };
             periodic.find = vi.fn().mockReturnValue(oldItem);
-            await upsertMaster({ id: '1', text: 'New', days: ['Tue'] }, { periodic, tasks, ui });
+            await upsertMaster({ id: '1', text: 'New', days: ['Tue'] }, { periodic, tasks, ui, config });
             expect(periodic.update).toHaveBeenCalledWith({
                 id: '1',
                 text: 'New',
@@ -96,7 +105,7 @@ describe('routine logic', () => {
                 return Promise.resolve([]);
             });
 
-            await upsertMaster(newMasterData, { periodic, tasks, ui });
+            await upsertMaster(newMasterData, { periodic, tasks, ui, config });
 
             expect(tasks.update).toHaveBeenCalledWith(expect.objectContaining({ id: 't1', text: 'New Text' }));
             expect(tasks.update).toHaveBeenCalledWith(expect.objectContaining({ id: 't2', text: 'New Text' }));
@@ -123,7 +132,7 @@ describe('routine logic', () => {
                 return Promise.resolve([]);
             });
 
-            await upsertMaster(newMasterData, { periodic, tasks, ui });
+            await upsertMaster(newMasterData, { periodic, tasks, ui, config });
 
             // 月曜はスケジュール継続：テキスト更新
             expect(tasks.update).toHaveBeenCalledWith(expect.objectContaining({ id: 't1', text: 'New Text' }));
@@ -134,7 +143,7 @@ describe('routine logic', () => {
         });
 
         it('タスク名がない場合にエラーを投げること', async () => {
-            await expect(upsertMaster({ text: '', days: ['Mon'] }, { periodic, tasks, ui })).rejects.toThrow('タスク名を入力してください');
+            await expect(upsertMaster({ text: '', days: ['Mon'] }, { periodic, tasks, ui, config })).rejects.toThrow('タスク名を入力してください');
         });
     });
 
@@ -152,7 +161,7 @@ describe('routine logic', () => {
                 return Promise.resolve([]);
             });
 
-            await deleteMaster(masterId, { periodic, tasks });
+            await deleteMaster(masterId, { periodic, tasks, config });
 
             expect(periodic.remove).toHaveBeenCalledWith(masterId);
             expect(tasks.remove).toHaveBeenCalledWith('t1');
@@ -170,10 +179,59 @@ describe('routine logic', () => {
                 return Promise.resolve([]);
             });
 
-            await deleteMaster(masterId, { periodic, tasks });
+            await deleteMaster(masterId, { periodic, tasks, config });
 
             expect(periodic.remove).toHaveBeenCalledWith(masterId);
             expect(tasks.remove).not.toHaveBeenCalled();
+        });
+
+        it('手動移動された未完了タスクは削除しないこと', async () => {
+            const masterId = 'm1';
+            tasks.getAvailableDates = vi.fn().mockReturnValue(['2026-06-09']);
+            
+            // 本来は2026-06-08予定だが、2026-06-09に移動されたタスク
+            const taskMoved = { id: 't1', text: 'Text', date: '2026-06-09', originalDate: '2026-06-08', periodicId: masterId, done: false };
+
+            tasks.getTasksFor = vi.fn().mockImplementation((date) => {
+                if (date === '2026-06-09') return Promise.resolve([taskMoved]);
+                return Promise.resolve([]);
+            });
+
+            await deleteMaster(masterId, { periodic, tasks, config });
+
+            expect(periodic.remove).toHaveBeenCalledWith(masterId);
+            expect(tasks.remove).not.toHaveBeenCalled();
+        });
+
+        it('祝日調整で自動スライドされたが手動移動はされていない未完了タスクは削除すること', async () => {
+            const masterId = 'm1';
+            tasks.getAvailableDates = vi.fn().mockReturnValue(['2026-06-09']);
+            
+            // 2026-06-08 (Mon) が祝日、after 調整により 2026-06-09 (Tue) に自動生成されたタスク
+            const taskAdjusted = { id: 't1', text: 'Text', date: '2026-06-09', originalDate: '2026-06-08', periodicId: masterId, done: false };
+
+            tasks.getTasksFor = vi.fn().mockImplementation((date) => {
+                if (date === '2026-06-09') return Promise.resolve([taskAdjusted]);
+                return Promise.resolve([]);
+            });
+
+            config.getState = vi.fn().mockReturnValue({
+                workDays: [1, 2, 3, 4, 5],
+                holidays: ['2026-06-08']
+                // デフォルトは空
+            });
+
+            periodic.getState = vi.fn().mockReturnValue([{
+                id: masterId,
+                text: 'Text',
+                schedule: { type: 'weekly', days: ['Mon'] },
+                holiday_adjustment: 'after'
+            }]);
+
+            await deleteMaster(masterId, { periodic, tasks, config });
+
+            expect(periodic.remove).toHaveBeenCalledWith(masterId);
+            expect(tasks.remove).toHaveBeenCalledWith('t1');
         });
     });
 
@@ -181,7 +239,7 @@ describe('routine logic', () => {
         it('マスタに基づいてタスクを生成すること', async () => {
             periodic.getState = vi.fn().mockReturnValue([{ id: '1', text: 'Periodic', schedule: { type: 'weekly', days: ['Mon'] } }]);
             // 2026-06-08 is Monday
-            await generateTasksFromRoutine('2026-06-08', { periodic, tasks });
+            await generateTasksFromRoutine('2026-06-08', { periodic, tasks, config });
             expect(tasks.addMany).toHaveBeenCalled();
             const saved = (tasks.addMany as any).mock.calls[0][0];
             expect(saved).toHaveLength(1);
@@ -191,7 +249,7 @@ describe('routine logic', () => {
         });
 
         it('過去日の場合は生成しないこと', async () => {
-            await generateTasksFromRoutine('2026-06-07', { periodic, tasks });
+            await generateTasksFromRoutine('2026-06-07', { periodic, tasks, config });
             expect(tasks.addMany).not.toHaveBeenCalled();
         });
     });

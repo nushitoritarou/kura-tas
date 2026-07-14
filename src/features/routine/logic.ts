@@ -1,8 +1,9 @@
 import { RoutineStore } from '@/core/store/RoutineStore';
 import { TaskStore } from '@/core/store/TaskStore';
 import { UIStore } from '@/core/store/UIStore';
+import { ConfigStore } from '@/core/store/ConfigStore';
 import { RoutineTask, DayOfWeekStr, DAYS_MAP } from '@/types';
-import { computeMissingRoutineTasks } from '@/core/engine/routine';
+import { computeMissingRoutineTasks, getAdjustedDate } from '@/core/engine/routine';
 import { getTodayStr, getDayOfWeek } from '@/core/engine/datetime';
 import { createTask } from '@/core/engine/factories';
 
@@ -30,10 +31,10 @@ export async function createTaskFromRoutine(
 
 /** マスタ追加・更新・削除 */
 export async function upsertMaster(
-    data: { id?: string; text: string; days: DayOfWeekStr[] }, 
-    deps: { periodic: RoutineStore; tasks: TaskStore; ui: UIStore }
+    data: { id?: string; text: string; days: DayOfWeekStr[]; holiday_adjustment?: 'before' | 'after' | 'skip' }, 
+    deps: { periodic: RoutineStore; tasks: TaskStore; ui: UIStore; config: ConfigStore }
 ): Promise<void> {
-    const { periodic, tasks, ui } = deps;
+    const { periodic, tasks, ui, config } = deps;
 
     if (!data.text) throw new Error('タスク名を入力してください');
 
@@ -50,7 +51,8 @@ export async function upsertMaster(
             schedule: {
                 type: scheduleType,
                 days: scheduleDays
-            }
+            },
+            holiday_adjustment: data.holiday_adjustment
         };
         await periodic.update(master);
     } else {
@@ -60,32 +62,41 @@ export async function upsertMaster(
             schedule: {
                 type: scheduleType,
                 days: scheduleDays
-            }
+            },
+            holiday_adjustment: data.holiday_adjustment
         };
         await periodic.add(master);
     }
 
     // 既存タスクとの同期（当日・未来）
-    await syncGeneratedTasks(master, { tasks });
+    await syncGeneratedTasks(master, { tasks, config });
 
     // もし表示中の日付が対象なら、即座にタスク生成を試みる
     const currentDate = ui.getState().currentDate;
-    await generateTasksFromRoutine(currentDate, { periodic, tasks });
+    await generateTasksFromRoutine(currentDate, { periodic, tasks, config });
 }
 
-export async function deleteMaster(id: string, deps: { periodic: RoutineStore; tasks: TaskStore }): Promise<void> {
-    await deps.periodic.remove(id);
+export async function deleteMaster(
+    id: string, 
+    deps: { periodic: RoutineStore; tasks: TaskStore; config: ConfigStore }
+): Promise<void> {
+    const master = deps.periodic.getState().find(m => m.id === id);
     // 既存タスクの削除（当日・未来）
-    await syncGeneratedTasks({ id, deleted: true }, { tasks: deps.tasks });
+    await syncGeneratedTasks({ id, deleted: true, master }, { tasks: deps.tasks, config: deps.config });
+    await deps.periodic.remove(id);
 }
 
 /** 既に生成済みのタスクをマスタの変更に合わせて同期する（当日・未来のみ） */
 export async function syncGeneratedTasks(
-    master: RoutineTask | { id: string; deleted: true },
-    deps: { tasks: TaskStore }
+    master: RoutineTask | { id: string; deleted: true; master?: RoutineTask },
+    deps: { tasks: TaskStore; config?: ConfigStore }
 ): Promise<void> {
     const today = getTodayStr();
     const availableDates = deps.tasks.getAvailableDates().filter(d => d >= today);
+
+    const config = deps.config?.getState() || {};
+    const workDays = config.workDays || [1, 2, 3, 4, 5];
+    const holidays = config.holidays || [];
 
     for (const date of availableDates) {
         const dayTasks = await deps.tasks.getTasksFor(date);
@@ -94,28 +105,44 @@ export async function syncGeneratedTasks(
         if (matchingTasks.length === 0) continue;
 
         const isDeleted = 'deleted' in master;
+        const m = isDeleted ? (master as { master?: RoutineTask }).master : (master as RoutineTask);
 
         for (const task of matchingTasks) {
             // 完了済みタスクは実績として保護する
             if (task.done) continue;
 
+            const originalDate = task.originalDate || task.date;
+
+            // 祝日調整に基づく本来の期待日付を計算する
+            let expectedDate: string | null = originalDate;
+            if (m) {
+                expectedDate = getAdjustedDate(
+                    originalDate,
+                    m.holiday_adjustment || 'skip',
+                    workDays,
+                    holidays
+                );
+            }
+
+            // ユーザーが動かさず、本来の自動生成枠（祝日調整後）に居るか
+            const isStillInOriginalSlot = expectedDate === task.date;
+
             if (isDeleted) {
-                // マスタ削除時は、未完了タスクを削除
-                await deps.tasks.remove(task.id);
+                // マスタ削除時は、元の枠（調整後の枠含む）に居る未完了タスクのみ削除（手動移動されたタスクは保護）
+                if (isStillInOriginalSlot) {
+                    await deps.tasks.remove(task.id);
+                }
             } else {
-                const m = master as RoutineTask;
+                const activeM = m as RoutineTask;
                 // 生成時の日付（originalDate）に基づいて、本来のスケジュール枠が廃止されたか判定
-                const originalDate = task.originalDate || task.date;
                 const originalDayNum = getDayOfWeek(originalDate);
                 const originalDayStr = DAYS_MAP[originalDayNum];
 
                 // その曜日の枠自体が廃止されたか
-                const isSlotAbolished = !m.schedule || 
-                    m.schedule.type !== 'weekly' || 
-                    !m.schedule.days || 
-                    !m.schedule.days.includes(originalDayStr);
-                
-                const isStillInOriginalSlot = originalDate === task.date; // ユーザーが動かさず、元の枠に居るか
+                const isSlotAbolished = !activeM.schedule || 
+                    activeM.schedule.type !== 'weekly' || 
+                    !activeM.schedule.days || 
+                    !activeM.schedule.days.includes(originalDayStr);
 
                 if (isSlotAbolished && isStillInOriginalSlot) {
                     // 枠自体が廃止され、かつユーザーが動かした形跡もない場合は、不要なタスクとして削除
@@ -123,8 +150,8 @@ export async function syncGeneratedTasks(
                 } else {
                     // それ以外（枠が存続している、あるいはユーザーが手動で場所を変えた場合）は、
                     // ユーザーの意思を尊重して削除はせず、内容（テキスト）の更新のみ行う
-                    if (task.text !== m.text) {
-                        await deps.tasks.update({ ...task, text: m.text });
+                    if (task.text !== activeM.text) {
+                        await deps.tasks.update({ ...task, text: activeM.text });
                     }
                 }
             }
@@ -133,7 +160,10 @@ export async function syncGeneratedTasks(
 }
 
 /** 指定された日付の定期タスクをマスタから生成する */
-export async function generateTasksFromRoutine(date: string, deps: { periodic: RoutineStore; tasks: TaskStore }): Promise<void> {
+export async function generateTasksFromRoutine(
+    date: string, 
+    deps: { periodic: RoutineStore; tasks: TaskStore; config: ConfigStore }
+): Promise<void> {
     // 過去日には自動生成しない
     const today = getTodayStr();
     if (date < today) return;
@@ -141,7 +171,11 @@ export async function generateTasksFromRoutine(date: string, deps: { periodic: R
     const masters = deps.periodic.getState();
     const existingTasks = deps.tasks.getState().filter(t => t.date === date);
 
-    const newTasks = computeMissingRoutineTasks(masters, existingTasks, date);
+    const config = deps.config.getState();
+    const workDays = config.workDays || [1, 2, 3, 4, 5];
+    const holidays = config.holidays || [];
+
+    const newTasks = computeMissingRoutineTasks(masters, existingTasks, date, workDays, holidays);
 
     if (newTasks.length > 0) {
         await deps.tasks.addMany(newTasks);
