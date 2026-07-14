@@ -55,6 +55,8 @@ export interface Config {
   logLevel?: LogLevel;
   enableFileLog?: boolean;
   logFilePath?: string;
+  workDays?: number[]; // 営業日の曜日配列 (0:日, 1:月, ... 6:土)
+  holidays?: string[]; // 特定の祝日・休日の日付配列 ("YYYY-MM-DD"形式)
 }
 
 export type DayOfWeekStr = 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat';
@@ -68,6 +70,7 @@ export interface RoutineTask {
     days?: DayOfWeekStr[];
   };
   lastGenerated?: string;
+  holiday_adjustment?: 'before' | 'after' | 'skip'; // 休日調整ルール
 }
 
 export type PeriodicTask = RoutineTask;

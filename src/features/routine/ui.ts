@@ -8,8 +8,12 @@ export function createMasterListHtml(masters: RoutineTask[]): string {
     
     return masters.map(m => {
         const isWeekly = m.schedule.type === 'weekly' && m.schedule.days && m.schedule.days.length > 0;
+        const adjustmentText = m.holiday_adjustment === 'before' ? ' (前移動)' 
+            : m.holiday_adjustment === 'after' ? ' (後移動)' 
+            : m.holiday_adjustment === 'skip' ? ' (スキップ)'
+            : ' (スキップ)';
         const scheduleText = isWeekly
-            ? m.schedule.days!.map(d => dayLabels[DAYS_MAP.indexOf(d)]).join(', ')
+            ? m.schedule.days!.map(d => dayLabels[DAYS_MAP.indexOf(d)]).join(', ') + adjustmentText
             : '手動 (スケジュールなし)';
 
         return `

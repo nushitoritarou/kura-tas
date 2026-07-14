@@ -45,6 +45,7 @@
             <div class="nav-item" id="nav-calendar">📅 カレンダー (WIP)</div>
             <div class="nav-item" id="nav-periodic">⚙ 定型タスク</div>
             <div class="nav-item" id="nav-import">📥 タスク読込 (AI連携)</div>
+            <div class="nav-item" id="nav-holidays">📅 休日設定</div>
 
             <div class="inbox-area">
                 <h2>Inbox (Stock)</h2>
@@ -140,10 +141,52 @@
                     <input type="checkbox" id="day-5" class="day-checkbox" value="5"><label for="day-5" class="day-label">金</label>
                     <input type="checkbox" id="day-6" class="day-checkbox" value="6"><label for="day-6" class="day-label">土</label>
                 </div>
+                <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                    <label for="periodic-holiday-adjustment" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">休日調整:</label>
+                    <select id="periodic-holiday-adjustment" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                        <option value="skip">スキップ</option>
+                        <option value="before">前営業日に移動</option>
+                        <option value="after">後営業日に移動</option>
+                    </select>
+                </div>
                 <div style="margin-top:15px; text-align:right;">
                     <button class="btn" id="btn-close-periodic">閉じる</button>
                     <button class="btn btn-primary" id="btn-add-periodic">登録する</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Holidays -->
+    <div id="modal-holidays" class="modal">
+        <div class="modal-content">
+            <h3>📅 休日・営業日設定</h3>
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px; font-size: 13px;">営業日の曜日</h4>
+                <div class="day-chip-container" id="holiday-workdays-container">
+                    <input type="checkbox" id="workday-0" class="workday-checkbox" value="0"><label for="workday-0" class="day-label">日</label>
+                    <input type="checkbox" id="workday-1" class="workday-checkbox" value="1"><label for="workday-1" class="day-label">月</label>
+                    <input type="checkbox" id="workday-2" class="workday-checkbox" value="2"><label for="workday-2" class="day-label">火</label>
+                    <input type="checkbox" id="workday-3" class="workday-checkbox" value="3"><label for="workday-3" class="day-label">水</label>
+                    <input type="checkbox" id="workday-4" class="workday-checkbox" value="4"><label for="workday-4" class="day-label">木</label>
+                    <input type="checkbox" id="workday-5" class="workday-checkbox" value="5"><label for="workday-5" class="day-label">金</label>
+                    <input type="checkbox" id="workday-6" class="workday-checkbox" value="6"><label for="workday-6" class="day-label">土</label>
+                </div>
+            </div>
+            
+            <div style="border-top: 1px solid var(--border); padding-top: 15px;">
+                <h4 style="margin: 0 0 10px; font-size: 13px;">特定の休日・祝日の日付</h4>
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="date" id="holiday-date-input" class="inbox-input" style="flex:1; margin:0;">
+                    <button class="btn btn-primary" id="btn-add-holiday-date" style="padding:2px 15px;">追加</button>
+                </div>
+                <div id="holiday-list" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); padding: 5px; background: var(--secondary);">
+                    <!-- Items populated by JS -->
+                </div>
+            </div>
+            
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn btn-primary" id="btn-close-holidays">閉じる</button>
             </div>
         </div>
     </div>

@@ -26,6 +26,7 @@ export const el = {
     btnToday: document.getElementById('nav-today') as HTMLElement,
     btnUndo: document.getElementById('btn-undo') as HTMLButtonElement,
     btnRedo: document.getElementById('btn-redo') as HTMLButtonElement,
+    btnHolidays: document.getElementById('nav-holidays') as HTMLElement,
   },
 
   // 共通UI
@@ -77,6 +78,15 @@ export const el = {
       btnClose: document.getElementById('btn-close-periodic') as HTMLElement,
       title: document.getElementById('periodic-modal-title') as HTMLElement,
       dayCheckboxes: document.querySelectorAll('.day-checkbox') as NodeListOf<HTMLInputElement>,
+      holidayAdjustment: document.getElementById('periodic-holiday-adjustment') as HTMLSelectElement,
+    },
+    holidays: {
+      root: document.getElementById('modal-holidays') as HTMLElement,
+      workdayCheckboxes: document.querySelectorAll('.workday-checkbox') as NodeListOf<HTMLInputElement>,
+      dateInput: document.getElementById('holiday-date-input') as HTMLInputElement,
+      btnAddDate: document.getElementById('btn-add-holiday-date') as HTMLElement,
+      dateList: document.getElementById('holiday-list') as HTMLElement,
+      btnClose: document.getElementById('btn-close-holidays') as HTMLElement,
     }
   }
 };

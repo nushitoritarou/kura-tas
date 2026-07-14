@@ -16,7 +16,7 @@ export function togglePeriodicModal(show: boolean): void {
 
 /** フォームの状態をリセットまたは設定する */
 export function setupPeriodicForm(isEdit: boolean, data?: RoutineTask): void {
-    const { title, btnSubmit, input, dayCheckboxes } = el.modals.periodic;
+    const { title, btnSubmit, input, dayCheckboxes, holidayAdjustment } = el.modals.periodic;
     
     title.textContent = getFormTitle(isEdit);
     btnSubmit.textContent = getSubmitBtnLabel(isEdit);
@@ -30,12 +30,14 @@ export function setupPeriodicForm(isEdit: boolean, data?: RoutineTask): void {
                          data.schedule.days && 
                          data.schedule.days.includes(dayStr) ? true : false;
         });
+        holidayAdjustment.value = data.holiday_adjustment || 'skip';
         btnSubmit.dataset.id = data.id;
     } else {
         input.value = '';
         dayCheckboxes.forEach(cb => {
             cb.checked = false;
         });
+        holidayAdjustment.value = 'skip';
         delete btnSubmit.dataset.id;
     }
 }

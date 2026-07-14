@@ -35,5 +35,53 @@ describe('routineEngine', () => {
             expect(result[0].text).toBe('Mon Task');
             expect(result[0].periodicId).toBe('2');
         });
+
+        it('祝日かつスキップルールの場合は生成しないこと', () => {
+            const date = '2026-06-08'; // Monday
+            const testMasters: RoutineTask[] = [
+                { id: '1', text: 'Mon Task', schedule: { type: 'weekly', days: ['Mon'] }, holiday_adjustment: 'skip' }
+            ];
+            // 2026-06-08 を祝日に指定
+            const result = computeMissingRoutineTasks(testMasters, [], date, [1, 2, 3, 4, 5], ['2026-06-08']);
+            expect(result).toHaveLength(0);
+        });
+
+        it('祝日かつ後営業日移動の場合、翌営業日にタスクが移動して生成されること', () => {
+            const testMasters: RoutineTask[] = [
+                { id: '1', text: 'Mon Task', schedule: { type: 'weekly', days: ['Mon'] }, holiday_adjustment: 'after' }
+            ];
+            const workDays = [1, 2, 3, 4, 5];
+            const holidays = ['2026-06-08']; // 6/8(月)は祝日
+
+            // 6/8(月祝)の判定 -> 生成されない
+            const resultOnHoliday = computeMissingRoutineTasks(testMasters, [], '2026-06-08', workDays, holidays);
+            expect(resultOnHoliday).toHaveLength(0);
+
+            // 6/9(火)の判定 -> 月曜のタスクが移動して火曜に生成される
+            const resultOnNextDay = computeMissingRoutineTasks(testMasters, [], '2026-06-09', workDays, holidays);
+            expect(resultOnNextDay).toHaveLength(1);
+            expect(resultOnNextDay[0].text).toBe('Mon Task');
+            expect(resultOnNextDay[0].date).toBe('2026-06-09');
+            expect(resultOnNextDay[0].originalDate).toBe('2026-06-08'); // 本来の予定日がoriginalDateにセットされていること
+        });
+
+        it('祝日かつ前営業日移動の場合、前営業日にタスクが前倒しされて生成されること', () => {
+            const testMasters: RoutineTask[] = [
+                { id: '1', text: 'Mon Task', schedule: { type: 'weekly', days: ['Mon'] }, holiday_adjustment: 'before' }
+            ];
+            const workDays = [1, 2, 3, 4, 5];
+            const holidays = ['2026-06-08']; // 6/8(月)は祝日
+
+            // 6/5(金)の判定 -> 月曜のタスクが前倒しされて金曜に生成される
+            const resultOnPrevDay = computeMissingRoutineTasks(testMasters, [], '2026-06-05', workDays, holidays);
+            expect(resultOnPrevDay).toHaveLength(1);
+            expect(resultOnPrevDay[0].text).toBe('Mon Task');
+            expect(resultOnPrevDay[0].date).toBe('2026-06-05');
+            expect(resultOnPrevDay[0].originalDate).toBe('2026-06-08'); // 本来の予定日がoriginalDateにセットされていること
+
+            // 6/8(月祝)の判定 -> 生成されない
+            const resultOnHoliday = computeMissingRoutineTasks(testMasters, [], '2026-06-08', workDays, holidays);
+            expect(resultOnHoliday).toHaveLength(0);
+        });
     });
 });
