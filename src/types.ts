@@ -66,8 +66,12 @@ export interface RoutineTask {
   id: string;
   text: string;
   schedule: {
-    type: 'weekly' | 'none';
-    days?: DayOfWeekStr[];
+    type: 'weekly' | 'interval' | 'monthly-day' | 'monthly-weekday' | 'none';
+    days?: DayOfWeekStr[];         // 'weekly', 'interval', 'monthly-weekday' 用
+    intervalWeeks?: number;        // 'interval' 用
+    baseDate?: string;             // 'interval' 用
+    monthlyDay?: number | 'last';  // 'monthly-day' 用
+    weekIndex?: number | 'last';   // 'monthly-weekday' 用
   };
   lastGenerated?: string;
   holiday_adjustment?: 'before' | 'after' | 'skip'; // 休日調整ルール

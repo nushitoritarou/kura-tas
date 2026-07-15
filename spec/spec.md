@@ -27,7 +27,12 @@ HTML 1ファイルで完結し、File System Access API を通じてローカル
 - **共通リンク集**: 全ての日付から参照可能なブックマーク機能。
 
 ### 3.3. 自動化と効率化
-- **定期タスク**: 曜日ごとの自動生成ルールを設定可能。
+- **定期タスク**: スケジュール自動生成ルールを設定可能。
+  - **スケジュールタイプ**:
+    - **毎週 (Weekly)**: 指定した曜日に毎週生成。
+    - **週おき (Interval)**: 指定した基準日から N 週間ごとの指定曜日に生成。
+    - **毎月日付 (Monthly Day)**: 毎月指定日（1〜31日、または「月末」）に生成。指定日がその月に存在しない（例：30日までの月に31日を指定）場合は、その月の最終日に前倒しして生成される。
+    - **毎月第N曜日 (Monthly Weekday)**: 毎月の第1〜第5、または最終の指定曜日に生成（例：第2火曜日、最終金曜日）。
   - **自動生成**: 当日および未来の日付に自動でタスクが追加される。
   - **同期 (Sync)**: マスタの内容（テキスト）を変更すると、既に生成済みの当日・未来のタスクにも変更が反映される。
   - **ノートテンプレート自動生成と同期**:
@@ -76,7 +81,23 @@ HTML 1ファイルで完結し、File System Access API を通じてローカル
 - `/tasks/[YYYY-MM-DD].json`: 日付別タスクデータ。
 - `/inbox.json`: Inboxデータ。
 - `/links.json`: 共通リンク集。
-- `/routine.json`: 定期タスク定義.
+- `/routine.json`: 定期タスク定義。
+  ```typescript
+  export interface RoutineTask {
+    id: string;
+    text: string;
+    schedule: {
+      type: 'weekly' | 'interval' | 'monthly-day' | 'monthly-weekday' | 'none';
+      days?: DayOfWeekStr[];         // 'weekly', 'interval', 'monthly-weekday' 用
+      intervalWeeks?: number;        // 'interval' 用
+      baseDate?: string;             // 'interval' 用
+      monthlyDay?: number | 'last';  // 'monthly-day' 用
+      weekIndex?: number | 'last';   // 'monthly-weekday' 用
+    };
+    lastGenerated?: string;
+    holiday_adjustment?: 'before' | 'after' | 'skip';
+  }
+  ```
 - `/config.json`: アプリ設定。
 - `/notes/*.md`: 手順書（フロントマター付きMarkdown）。
 

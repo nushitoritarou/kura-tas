@@ -133,7 +133,20 @@
             <div style="border-top: 1px solid var(--border); padding-top: 15px;">
                 <h4 id="routine-modal-title" style="margin: 0 0 10px; font-size: 13px;">新規登録</h4>
                 <input type="text" id="routine-new-text" class="inbox-input" placeholder="タスク名を入力...">
-                <div class="day-chip-container">
+                
+                <!-- スケジュール選択 -->
+                <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                    <label for="routine-schedule-type" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">スケジュール:</label>
+                    <select id="routine-schedule-type" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                        <option value="weekly">毎週 (Weekly)</option>
+                        <option value="interval">週おき (Interval)</option>
+                        <option value="monthly-day">毎月日付 (Monthly Day)</option>
+                        <option value="monthly-weekday">毎月第N曜日 (Monthly Weekday)</option>
+                        <option value="none">手動 (None)</option>
+                    </select>
+                </div>
+
+                <div id="routine-days-container" class="day-chip-container" style="margin-top: 10px;">
                     <input type="checkbox" id="day-0" class="day-checkbox" value="0"><label for="day-0" class="day-label">日</label>
                     <input type="checkbox" id="day-1" class="day-checkbox" value="1"><label for="day-1" class="day-label">月</label>
                     <input type="checkbox" id="day-2" class="day-checkbox" value="2"><label for="day-2" class="day-label">火</label>
@@ -141,6 +154,66 @@
                     <input type="checkbox" id="day-4" class="day-checkbox" value="4"><label for="day-4" class="day-label">木</label>
                     <input type="checkbox" id="day-5" class="day-checkbox" value="5"><label for="day-5" class="day-label">金</label>
                     <input type="checkbox" id="day-6" class="day-checkbox" value="6"><label for="day-6" class="day-label">土</label>
+                </div>
+
+                <!-- 週おきオプションコンテナ -->
+                <div id="routine-interval-container" style="margin-top: 10px; display: none; align-items: center; gap: 8px;">
+                    <label for="routine-interval-weeks" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">間隔 (週):</label>
+                    <input type="number" id="routine-interval-weeks" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;" min="1" value="2">
+                    <label for="routine-base-date" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">基準日:</label>
+                    <input type="date" id="routine-base-date" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                </div>
+
+                <!-- 毎月日付オプションコンテナ -->
+                <div id="routine-monthly-day-container" style="margin-top: 10px; display: none; align-items: center; gap: 8px;">
+                    <label for="routine-monthly-day" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">指定日:</label>
+                    <select id="routine-monthly-day" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                        <option value="1">1日</option>
+                        <option value="2">2日</option>
+                        <option value="3">3日</option>
+                        <option value="4">4日</option>
+                        <option value="5">5日</option>
+                        <option value="6">6日</option>
+                        <option value="7">7日</option>
+                        <option value="8">8日</option>
+                        <option value="9">9日</option>
+                        <option value="10">10日</option>
+                        <option value="11">11日</option>
+                        <option value="12">12日</option>
+                        <option value="13">13日</option>
+                        <option value="14">14日</option>
+                        <option value="15">15日</option>
+                        <option value="16">16日</option>
+                        <option value="17">17日</option>
+                        <option value="18">18日</option>
+                        <option value="19">19日</option>
+                        <option value="20">20日</option>
+                        <option value="21">21日</option>
+                        <option value="22">22日</option>
+                        <option value="23">23日</option>
+                        <option value="24">24日</option>
+                        <option value="25">25日</option>
+                        <option value="26">26日</option>
+                        <option value="27">27日</option>
+                        <option value="28">28日</option>
+                        <option value="29">29日</option>
+                        <option value="30">30日</option>
+                        <option value="31">31日</option>
+                        <option value="last">月末</option>
+                    </select>
+                </div>
+
+                <!-- 毎月第N曜日オプションコンテナ -->
+                <div id="routine-monthly-weekday-container" style="margin-top: 10px; display: none; align-items: center; gap: 8px;">
+                    <label for="routine-week-index" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">第N週曜日:</label>
+                    <select id="routine-week-index" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                        <option value="1">第1</option>
+                        <option value="2">第2</option>
+                        <option value="3">第3</option>
+                        <option value="4">第4</option>
+                        <option value="5">第5</option>
+                        <option value="last">最終</option>
+                    </select>
                 </div>
                 <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
                     <label for="routine-holiday-adjustment" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">休日調整:</label>

@@ -1,8 +1,101 @@
 import { RoutineTask, Task, DAYS_MAP } from "@/types";
 import { createTask } from "./factories";
-import { isWorkDay, getPrevWorkDay, getNextWorkDay, formatDate } from "./datetime";
+import { isWorkDay, getPrevWorkDay, getNextWorkDay, formatDate, parseLocalDate } from "./datetime";
 
 export type DayOfWeekStr = 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat';
+
+/** 特定の日付が定型タスクのスケジュールに合致するか判定する */
+export function isScheduledOn(m: RoutineTask, date: Date): boolean {
+    const schedule = m.schedule;
+    if (!schedule) return false;
+
+    switch (schedule.type) {
+        case 'weekly': {
+            if (!schedule.days || schedule.days.length === 0) return false;
+            const dayStr = DAYS_MAP[date.getDay()];
+            return schedule.days.includes(dayStr);
+        }
+        case 'interval': {
+            if (!schedule.days || schedule.days.length === 0) return false;
+            const intervalWeeks = schedule.intervalWeeks || 1;
+            const baseDateStr = schedule.baseDate;
+            if (!baseDateStr) return false;
+
+            const dayStr = DAYS_MAP[date.getDay()];
+            if (!schedule.days.includes(dayStr)) return false;
+
+            // 週の開始日は日曜として計算。
+            // 基準日 baseDate が属する週から、date が属する週までの経過週数 W が W % intervalWeeks === 0
+            const getStartOfWeek = (d: Date) => {
+                const result = new Date(d);
+                const day = result.getDay();
+                result.setDate(result.getDate() - day);
+                result.setHours(0, 0, 0, 0);
+                return result;
+            };
+
+            const baseDate = parseLocalDate(baseDateStr);
+            const baseDateClean = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+            const dateClean = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+            const baseSunday = getStartOfWeek(baseDateClean);
+            const targetSunday = getStartOfWeek(dateClean);
+
+            const diffTime = targetSunday.getTime() - baseSunday.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            const diffWeeks = Math.floor(diffDays / 7);
+
+            if (diffWeeks < 0) return false;
+            return diffWeeks % intervalWeeks === 0;
+        }
+        case 'monthly-day': {
+            const monthlyDay = schedule.monthlyDay;
+            if (monthlyDay === undefined) return false;
+
+            const targetDay = date.getDate();
+            const targetMonth = date.getMonth();
+            const targetYear = date.getFullYear();
+
+            // その月の最終日を取得
+            const lastDateOfCurrentMonth = new Date(targetYear, targetMonth + 1, 0);
+            const maxDays = lastDateOfCurrentMonth.getDate();
+
+            if (monthlyDay === 'last') {
+                return targetDay === maxDays;
+            } else if (typeof monthlyDay === 'number') {
+                if (monthlyDay >= 1 && monthlyDay <= 31) {
+                    if (monthlyDay === targetDay) {
+                        return true;
+                    }
+                    if (monthlyDay > maxDays && targetDay === maxDays) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        case 'monthly-weekday': {
+            if (!schedule.days || schedule.days.length === 0) return false;
+            const weekIndex = schedule.weekIndex;
+            if (weekIndex === undefined) return false;
+
+            const dayStr = DAYS_MAP[date.getDay()];
+            if (!schedule.days.includes(dayStr)) return false;
+
+            if (typeof weekIndex === 'number' && weekIndex >= 1 && weekIndex <= 5) {
+                const occurrence = Math.floor((date.getDate() - 1) / 7) + 1;
+                return occurrence === weekIndex;
+            } else if (weekIndex === 'last') {
+                const nextWeekDate = new Date(date);
+                nextWeekDate.setDate(date.getDate() + 7);
+                return nextWeekDate.getMonth() !== date.getMonth();
+            }
+            return false;
+        }
+        default:
+            return false;
+    }
+}
 
 /** 日付ごとの不足タスク計算（純粋関数） */
 export function computeMissingRoutineTasks(
@@ -12,7 +105,7 @@ export function computeMissingRoutineTasks(
     workDays: number[] = [1, 2, 3, 4, 5],
     holidays: string[] = []
 ): Task[] {
-    const targetDate = new Date(date);
+    const targetDate = parseLocalDate(date);
     if (!isWorkDay(targetDate, workDays, holidays)) {
         return [];
     }
@@ -20,7 +113,7 @@ export function computeMissingRoutineTasks(
     const newTasks: Task[] = [];
 
     for (const m of masters) {
-        if (!m.schedule || m.schedule.type !== 'weekly' || !m.schedule.days || m.schedule.days.length === 0) {
+        if (!m.schedule || m.schedule.type === 'none') {
             continue;
         }
 
@@ -32,9 +125,7 @@ export function computeMissingRoutineTasks(
         const adjustment = m.holiday_adjustment || 'skip';
 
         // 1. 本来の日付で営業日の場合
-        const targetDayNum = targetDate.getDay();
-        const targetDayStr = DAYS_MAP[targetDayNum];
-        const isScheduledToday = m.schedule.days.includes(targetDayStr);
+        const isScheduledToday = isScheduledOn(m, targetDate);
 
         let shouldGenerate = false;
         let originalDateStr = date;
@@ -53,10 +144,9 @@ export function computeMissingRoutineTasks(
                 const end = new Date(date);
                 end.setDate(end.getDate() - 1);
 
-                // この期間の各日付について、mのスケジュール曜日が含まれるか判定
+                // この期間の各日付について、mのスケジュール予定日が含まれるか判定
                 for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                    const dayStr = DAYS_MAP[d.getDay()];
-                    if (m.schedule.days.includes(dayStr)) {
+                    if (isScheduledOn(m, d)) {
                         shouldGenerate = true;
                         originalDateStr = formatDate(d);
                         break;
@@ -71,10 +161,9 @@ export function computeMissingRoutineTasks(
                 const end = new Date(nextWd);
                 end.setDate(end.getDate() - 1);
 
-                // この期間の各日付について、mのスケジュール曜日が含まれるか判定
+                // この期間の各日付について、mのスケジュール予定日が含まれるか判定
                 for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                    const dayStr = DAYS_MAP[d.getDay()];
-                    if (m.schedule.days.includes(dayStr)) {
+                    if (isScheduledOn(m, d)) {
                         shouldGenerate = true;
                         originalDateStr = formatDate(d);
                         break;
@@ -101,7 +190,7 @@ export function getAdjustedDate(
     workDays: number[] = [1, 2, 3, 4, 5],
     holidays: string[] = []
 ): string | null {
-    const originalDate = new Date(originalDateStr);
+    const originalDate = parseLocalDate(originalDateStr);
     
     // 本来の日付が営業日なら、調整の必要なくその日が生成日
     if (isWorkDay(originalDate, workDays, holidays)) {

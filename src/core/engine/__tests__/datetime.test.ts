@@ -62,4 +62,19 @@ describe('core/engine/datetime', () => {
             expect(datetime.getPrevWorkDay('2026-07-21', [1, 2, 3, 4, 5], holidays)).toBe('2026-07-17'); // 火曜の前営業日は金曜
         });
     });
+    describe('parseLocalDate', () => {
+        it('parses YYYY-MM-DD correctly in local time', () => {
+            const date = datetime.parseLocalDate('2026-06-08');
+            expect(date.getFullYear()).toBe(2026);
+            expect(date.getMonth()).toBe(5); // 0-indexed, so June is 5
+            expect(date.getDate()).toBe(8);
+            
+            expect(date.getHours()).toBe(0);
+            expect(date.getMinutes()).toBe(0);
+        });
+
+        it('throws on invalid date string', () => {
+            expect(() => datetime.parseLocalDate('invalid-date')).toThrow();
+        });
+    });
 });
