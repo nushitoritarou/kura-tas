@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeMissingRoutineTasks } from '../routine';
+import { computeMissingRoutineTasks, isNoteSafeToSync } from '../routine';
 import { RoutineTask, Task } from '@/types';
 
 describe('routineEngine', () => {
@@ -82,6 +82,22 @@ describe('routineEngine', () => {
             // 6/8(月祝)の判定 -> 生成されない
             const resultOnHoliday = computeMissingRoutineTasks(testMasters, [], '2026-06-08', workDays, holidays);
             expect(resultOnHoliday).toHaveLength(0);
+        });
+    });
+
+    describe('isNoteSafeToSync', () => {
+        it('ノート本文が空の場合は true を返すこと', () => {
+            expect(isNoteSafeToSync('')).toBe(true);
+            expect(isNoteSafeToSync('   \n  ')).toBe(true);
+        });
+
+        it('本文が古いテンプレートと完全に一致する場合は true を返すこと', () => {
+            expect(isNoteSafeToSync('Same content', 'Same content')).toBe(true);
+        });
+
+        it('本文が異なる場合、かつ空でもない場合は false を返すこと', () => {
+            expect(isNoteSafeToSync('User content', 'Template content')).toBe(false);
+            expect(isNoteSafeToSync('User content', undefined)).toBe(false);
         });
     });
 });

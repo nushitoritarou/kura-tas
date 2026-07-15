@@ -16,10 +16,12 @@ export function createMasterListHtml(masters: RoutineTask[]): string {
             ? m.schedule.days!.map(d => dayLabels[DAYS_MAP.indexOf(d)]).join(', ') + adjustmentText
             : '手動 (スケジュールなし)';
 
+        const noteIndicator = m.noteTemplate ? ' <span title="ノートテンプレートあり" style="cursor:help;">📝</span>' : '';
+
         return `
         <div class="routine-item" data-id="${m.id}" style="display:flex; align-items:center; gap:8px; padding:8px; border-bottom:1px solid var(--border); font-size:13px;">
             <div style="flex:1;">
-                <div style="font-weight:bold;">${m.text}</div>
+                <div style="font-weight:bold;">${m.text}${noteIndicator}</div>
                 <div style="font-size:10px; color:var(--muted-foreground);">
                     ${scheduleText}
                 </div>

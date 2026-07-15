@@ -56,6 +56,7 @@ export const el = {
     panelTitle: document.getElementById('panel-title') as HTMLElement,
     btnToggleView: document.getElementById('btn-toggle-view') as HTMLElement,
     btnSave: document.getElementById('btn-save-note') as HTMLElement,
+    btnPromote: document.getElementById('btn-promote-note') as HTMLElement,
     status: document.getElementById('save-status') as HTMLElement,
     editor: document.getElementById('editor') as HTMLTextAreaElement,
     preview: document.getElementById('preview') as HTMLElement,
