@@ -56,6 +56,7 @@ export async function upsertMaster(
             weekIndex?: number | 'last';
         };
         holiday_adjustment?: 'before' | 'after' | 'skip';
+        noteTemplate?: string;
     }, 
     deps: { routine: RoutineStore; tasks: TaskStore; ui: UIStore; config: ConfigStore; notes: NoteStore }
 ): Promise<void> {
@@ -99,7 +100,8 @@ export async function upsertMaster(
             ...item, 
             text: data.text, 
             schedule: data.schedule,
-            holiday_adjustment: data.holiday_adjustment
+            holiday_adjustment: data.holiday_adjustment,
+            noteTemplate: data.noteTemplate
         };
         await routine.update(master);
     } else {
@@ -107,7 +109,8 @@ export async function upsertMaster(
             id: crypto.randomUUID(),
             text: data.text,
             schedule: data.schedule,
-            holiday_adjustment: data.holiday_adjustment
+            holiday_adjustment: data.holiday_adjustment,
+            noteTemplate: data.noteTemplate
         };
         await routine.add(master);
     }

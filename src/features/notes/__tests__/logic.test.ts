@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getActiveNote, saveNote } from '../logic';
+import { getActiveNote, saveNote, getNoteForTask } from '../logic';
 import { NoteStore } from '@/core/store/NoteStore';
 import { UIStore } from '@/core/store/UIStore';
 import { TaskStore } from '@/core/store/TaskStore';
@@ -42,6 +42,20 @@ describe('notes logic', () => {
             const note = { id: 'test', title: 'test', body: 'body', date: '2026-06-07', type: 'daily' } as any;
             await saveNote(note, { notes });
             expect(notes.saveNote).toHaveBeenCalledWith(note);
+        });
+    });
+
+    describe('getNoteForTask', () => {
+        it('指定されたタスクに紐づくノートを返すこと', async () => {
+            tasks.getState = vi.fn().mockReturnValue([{ id: 'task-123', text: 'Test Task', date: '2026-06-07' }]);
+            await getNoteForTask('task-123', '2026-06-07', { notes, tasks });
+            expect(notes.getNote).toHaveBeenCalledWith('task-task-123', { date: '2026-06-07', taskId: 'task-123' });
+        });
+
+        it('タスクが存在しない場合エラーになること', async () => {
+            tasks.getState = vi.fn().mockReturnValue([]);
+            await expect(getNoteForTask('task-123', '2026-06-07', { notes, tasks }))
+                .rejects.toThrow('指定されたタスクが見つかりません');
         });
     });
 });

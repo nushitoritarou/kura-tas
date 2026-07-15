@@ -37,7 +37,7 @@ export function updateScheduleFieldsVisibility(type: string): void {
 }
 
 /** フォームの状態をリセットまたは設定する */
-export function setupRoutineForm(isEdit: boolean, data?: RoutineTask): void {
+export function setupRoutineForm(isEdit: boolean, data?: Partial<RoutineTask>): void {
     const { 
         title, btnSubmit, input, dayCheckboxes, holidayAdjustment,
         scheduleType, intervalWeeks, baseDate, monthlyDay, weekIndex
@@ -52,8 +52,8 @@ export function setupRoutineForm(isEdit: boolean, data?: RoutineTask): void {
     const localNow = new Date(now.getTime() - (offset * 60 * 1000));
     const todayStr = localNow.toISOString().split('T')[0];
     
-    if (data) {
-        input.value = data.text;
+    if (isEdit && data) {
+        input.value = data.text || '';
         const sType = data.schedule ? data.schedule.type : 'none';
         scheduleType.value = sType;
         
@@ -78,11 +78,16 @@ export function setupRoutineForm(isEdit: boolean, data?: RoutineTask): void {
             : '1';
             
         holidayAdjustment.value = data.holiday_adjustment || 'skip';
+        if (data.noteTemplate) {
+            btnSubmit.dataset.noteTemplate = data.noteTemplate;
+        } else {
+            delete btnSubmit.dataset.noteTemplate;
+        }
         btnSubmit.dataset.id = data.id;
         
         updateScheduleFieldsVisibility(sType);
     } else {
-        input.value = '';
+        input.value = data?.text || '';
         scheduleType.value = 'weekly';
         dayCheckboxes.forEach(cb => {
             cb.checked = false;
@@ -92,6 +97,11 @@ export function setupRoutineForm(isEdit: boolean, data?: RoutineTask): void {
         monthlyDay.value = '1';
         weekIndex.value = '1';
         holidayAdjustment.value = 'skip';
+        if (data?.noteTemplate) {
+            btnSubmit.dataset.noteTemplate = data.noteTemplate;
+        } else {
+            delete btnSubmit.dataset.noteTemplate;
+        }
         delete btnSubmit.dataset.id;
         
         updateScheduleFieldsVisibility('weekly');
