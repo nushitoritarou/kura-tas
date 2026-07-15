@@ -22,7 +22,7 @@ import * as routineLogic from '@/features/routine/logic';
 import * as routineRenderer from '@/features/routine/renderer';
 import * as holidaysLogic from '@/features/holidays/logic';
 import * as holidaysRenderer from '@/features/holidays/renderer';
-import { DAYS_MAP } from '@/types';
+import { DAYS_MAP, RoutineTask } from '@/types';
 
 // 1. 全ストアの初期化 (Single Source of Truth)
 const store = new StoreRegistry();
@@ -539,16 +539,43 @@ async function bootstrap() {
         };
     }
 
+    // スケジュールタイプ変更時の表示切り替え
+    el.modals.routine.scheduleType.onchange = () => {
+        const type = el.modals.routine.scheduleType.value;
+        routineRenderer.updateScheduleFieldsVisibility(type);
+    };
+
     el.modals.routine.btnSubmit.onclick = async () => {
         const text = el.modals.routine.input.value.trim();
+        const type = el.modals.routine.scheduleType.value as 'weekly' | 'interval' | 'monthly-day' | 'monthly-weekday' | 'none';
+        const holiday_adjustment = el.modals.routine.holidayAdjustment.value as 'before' | 'after' | 'skip';
+
+        // 曜日を取得（weekly, interval, monthly-weekday 用）
         const days = Array.from(el.modals.routine.dayCheckboxes)
             .filter(cb => cb.checked)
             .map(cb => DAYS_MAP[parseInt(cb.value)]);
-        const holiday_adjustment = el.modals.routine.holidayAdjustment.value as 'before' | 'after' | 'skip';
+
+        const schedule: RoutineTask['schedule'] = { type };
+
+        if (type === 'weekly') {
+            schedule.days = days.length > 0 ? days : undefined;
+        } else if (type === 'interval') {
+            schedule.days = days.length > 0 ? days : undefined;
+            const weeksVal = parseInt(el.modals.routine.intervalWeeks.value);
+            schedule.intervalWeeks = isNaN(weeksVal) ? 2 : weeksVal;
+            schedule.baseDate = el.modals.routine.baseDate.value;
+        } else if (type === 'monthly-day') {
+            const dayVal = el.modals.routine.monthlyDay.value;
+            schedule.monthlyDay = dayVal === 'last' ? 'last' : parseInt(dayVal);
+        } else if (type === 'monthly-weekday') {
+            schedule.days = days.length > 0 ? days : undefined;
+            const wIdxVal = el.modals.routine.weekIndex.value;
+            schedule.weekIndex = wIdxVal === 'last' ? 'last' : parseInt(wIdxVal);
+        }
 
         const id = el.modals.routine.btnSubmit.dataset.id;
         await dispatchAction(async () => {
-            await routineLogic.upsertMaster({ id, text, days, holiday_adjustment }, { routine: store.routine, tasks: store.tasks, ui: store.ui, config: store.config, notes: store.notes });
+            await routineLogic.upsertMaster({ id, text, schedule, holiday_adjustment }, { routine: store.routine, tasks: store.tasks, ui: store.ui, config: store.config, notes: store.notes });
             routineRenderer.setupRoutineForm(false);
         });
     };

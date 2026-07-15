@@ -7,14 +7,51 @@ export function createMasterListHtml(masters: RoutineTask[]): string {
     const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
     
     return masters.map(m => {
-        const isWeekly = m.schedule.type === 'weekly' && m.schedule.days && m.schedule.days.length > 0;
         const adjustmentText = m.holiday_adjustment === 'before' ? ' (前移動)' 
             : m.holiday_adjustment === 'after' ? ' (後移動)' 
             : m.holiday_adjustment === 'skip' ? ' (スキップ)'
             : ' (スキップ)';
-        const scheduleText = isWeekly
-            ? m.schedule.days!.map(d => dayLabels[DAYS_MAP.indexOf(d)]).join(', ') + adjustmentText
-            : '手動 (スケジュールなし)';
+
+        let scheduleText = '';
+        if (m.schedule) {
+            switch (m.schedule.type) {
+                case 'weekly': {
+                    const days = m.schedule.days || [];
+                    scheduleText = days.length > 0
+                        ? days.map(d => dayLabels[DAYS_MAP.indexOf(d)]).join(', ') + adjustmentText
+                        : '毎週 (曜日未指定)' + adjustmentText;
+                    break;
+                }
+                case 'interval': {
+                    const days = m.schedule.days || [];
+                    const interval = m.schedule.intervalWeeks || 1;
+                    const base = m.schedule.baseDate || '';
+                    const daysStr = days.map(d => dayLabels[DAYS_MAP.indexOf(d)]).join(', ');
+                    scheduleText = `${base}から${interval}週おきの${daysStr}` + adjustmentText;
+                    break;
+                }
+                case 'monthly-day': {
+                    const day = m.schedule.monthlyDay;
+                    const dayStr = day === 'last' ? '月末' : `${day}日`;
+                    scheduleText = `毎月${dayStr}` + adjustmentText;
+                    break;
+                }
+                case 'monthly-weekday': {
+                    const days = m.schedule.days || [];
+                    const weekIdx = m.schedule.weekIndex;
+                    const weekIdxStr = weekIdx === 'last' ? '最終' : `第${weekIdx}`;
+                    const daysStr = days.map(d => dayLabels[DAYS_MAP.indexOf(d)]).join(', ');
+                    scheduleText = `毎月${weekIdxStr}${daysStr}` + adjustmentText;
+                    break;
+                }
+                case 'none':
+                default:
+                    scheduleText = '手動 (スケジュールなし)';
+                    break;
+            }
+        } else {
+            scheduleText = '手動 (スケジュールなし)';
+        }
 
         const noteIndicator = m.noteTemplate ? ' <span title="ノートテンプレートあり" style="cursor:help;">📝</span>' : '';
 

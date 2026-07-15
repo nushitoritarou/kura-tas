@@ -13,6 +13,18 @@ export function formatDate(date: Date): string {
 }
 
 /**
+ * YYYY-MM-DD 形式の日付文字列をローカルタイムゾーンに基づいて安全にDateオブジェクトに変換する
+ */
+export function parseLocalDate(dateStr: string): Date {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    if (isNaN(date.getTime())) {
+        throw new Error(`Invalid date string: ${dateStr}`);
+    }
+    return date;
+}
+
+/**
  * 今日の日付を YYYY-MM-DD 形式で返す
  */
 export function getTodayStr(): string {

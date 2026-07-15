@@ -72,7 +72,7 @@ describe('routine logic', () => {
 
     describe('upsertMaster', () => {
         it('IDがない場合、かつ曜日がある場合、weeklyスケジュールで新規追加すること', async () => {
-            await upsertMaster({ text: 'New', days: ['Mon'] }, { routine, tasks, ui, config, notes });
+            await upsertMaster({ text: 'New', schedule: { type: 'weekly', days: ['Mon'] } }, { routine, tasks, ui, config, notes });
             expect(routine.add).toHaveBeenCalled();
             const saved = (routine.add as any).mock.calls[0][0];
             expect(saved.text).toBe('New');
@@ -80,17 +80,17 @@ describe('routine logic', () => {
         });
 
         it('曜日が指定されていない場合、noneスケジュールで新規追加すること', async () => {
-            await upsertMaster({ text: 'New', days: [] }, { routine, tasks, ui, config, notes });
+            await upsertMaster({ text: 'New', schedule: { type: 'none' } }, { routine, tasks, ui, config, notes });
             expect(routine.add).toHaveBeenCalled();
             const saved = (routine.add as any).mock.calls[0][0];
             expect(saved.text).toBe('New');
-            expect(saved.schedule).toEqual({ type: 'none', days: undefined });
+            expect(saved.schedule).toEqual({ type: 'none' });
         });
 
         it('IDがある場合、更新すること', async () => {
             const oldItem = { id: '1', text: 'Old', schedule: { type: 'weekly' as const, days: ['Mon' as const] } };
             routine.find = vi.fn().mockReturnValue(oldItem);
-            await upsertMaster({ id: '1', text: 'New', days: ['Tue'] }, { routine, tasks, ui, config, notes });
+            await upsertMaster({ id: '1', text: 'New', schedule: { type: 'weekly', days: ['Tue'] } }, { routine, tasks, ui, config, notes });
             expect(routine.update).toHaveBeenCalledWith({
                 id: '1',
                 text: 'New',
@@ -101,7 +101,7 @@ describe('routine logic', () => {
         it('マスタ更新時、当日および未来日の既存タスクが更新されること', async () => {
             const masterId = 'm1';
             const oldMaster = { id: masterId, text: 'Old Text', schedule: { type: 'weekly' as const, days: ['Mon' as const, 'Tue' as const] } };
-            const newMasterData = { id: masterId, text: 'New Text', days: ['Mon' as const, 'Tue' as const] };
+            const newMasterData = { id: masterId, text: 'New Text', schedule: { type: 'weekly' as const, days: ['Mon' as const, 'Tue' as const] } };
             
             routine.find = vi.fn().mockReturnValue(oldMaster);
             tasks.getAvailableDates = vi.fn().mockReturnValue(['2026-06-08', '2026-06-09', '2026-06-07']);
@@ -127,7 +127,7 @@ describe('routine logic', () => {
         it('スケジュール変更時、本来の場所に居るタスクは削除され、手動移動したタスクは保護（更新のみ）されること', async () => {
             const masterId = 'm1';
             const oldMaster = { id: masterId, text: 'Old Text', schedule: { type: 'weekly' as const, days: ['Mon' as const, 'Tue' as const] } };
-            const newMasterData = { id: masterId, text: 'New Text', days: ['Mon' as const] }; // Tue removed
+            const newMasterData = { id: masterId, text: 'New Text', schedule: { type: 'weekly' as const, days: ['Mon' as const] } }; // Tue removed
             
             routine.find = vi.fn().mockReturnValue(oldMaster);
             tasks.getAvailableDates = vi.fn().mockReturnValue(['2026-06-08', '2026-06-09', '2026-06-10']);
@@ -155,7 +155,29 @@ describe('routine logic', () => {
         });
 
         it('タスク名がない場合にエラーを投げること', async () => {
-            await expect(upsertMaster({ text: '', days: ['Mon'] }, { routine, tasks, ui, config, notes })).rejects.toThrow('タスク名を入力してください');
+            await expect(upsertMaster({ text: '', schedule: { type: 'weekly', days: ['Mon'] } }, { routine, tasks, ui, config, notes })).rejects.toThrow('タスク名を入力してください');
+        });
+
+        it('曜日指定が必要なスケジュールで曜日がない場合にエラーを投げること', async () => {
+            await expect(upsertMaster({ text: 'New', schedule: { type: 'weekly', days: [] } }, { routine, tasks, ui, config, notes })).rejects.toThrow('曜日を選択してください');
+            await expect(upsertMaster({ text: 'New', schedule: { type: 'interval', days: [], baseDate: '2026-06-08', intervalWeeks: 2 } }, { routine, tasks, ui, config, notes })).rejects.toThrow('曜日を選択してください');
+        });
+
+        it('週おきスケジュールで基準日がない場合にエラーを投げること', async () => {
+            await expect(upsertMaster({ text: 'New', schedule: { type: 'interval', days: ['Mon'], intervalWeeks: 2 } }, { routine, tasks, ui, config, notes })).rejects.toThrow('基準日を指定してください');
+        });
+
+        it('週おきスケジュールで間隔が不正な場合にエラーを投げること', async () => {
+            await expect(upsertMaster({ text: 'New', schedule: { type: 'interval', days: ['Mon'], baseDate: '2026-06-08', intervalWeeks: 0 } }, { routine, tasks, ui, config, notes })).rejects.toThrow('間隔（週）は1以上の整数を指定してください');
+            await expect(upsertMaster({ text: 'New', schedule: { type: 'interval', days: ['Mon'], baseDate: '2026-06-08', intervalWeeks: -1 } }, { routine, tasks, ui, config, notes })).rejects.toThrow('間隔（週）は1以上の整数を指定してください');
+        });
+
+        it('毎月日付スケジュールで指定日がない場合にエラーを投げること', async () => {
+            await expect(upsertMaster({ text: 'New', schedule: { type: 'monthly-day' } as any }, { routine, tasks, ui, config, notes })).rejects.toThrow('指定日を指定してください');
+        });
+
+        it('毎月第N曜日スケジュールで週番号がない場合にエラーを投げること', async () => {
+            await expect(upsertMaster({ text: 'New', schedule: { type: 'monthly-weekday', days: ['Mon'] } as any }, { routine, tasks, ui, config, notes })).rejects.toThrow('第N週曜日を指定してください');
         });
     });
 

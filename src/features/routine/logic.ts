@@ -3,9 +3,9 @@ import { TaskStore } from '@/core/store/TaskStore';
 import { UIStore } from '@/core/store/UIStore';
 import { ConfigStore } from '@/core/store/ConfigStore';
 import { NoteStore } from '@/core/store/NoteStore';
-import { RoutineTask, DayOfWeekStr, DAYS_MAP } from '@/types';
-import { computeMissingRoutineTasks, getAdjustedDate, isNoteSafeToSync } from '@/core/engine/routine';
-import { getTodayStr, getDayOfWeek } from '@/core/engine/datetime';
+import { RoutineTask, DayOfWeekStr } from '@/types';
+import { computeMissingRoutineTasks, getAdjustedDate, isNoteSafeToSync, isScheduledOn } from '@/core/engine/routine';
+import { getTodayStr, parseLocalDate } from '@/core/engine/datetime';
 import { createTask, createNote, getNoteId } from '@/core/engine/factories';
 
 /** モーダルを開くためのマスタ一覧取得 */
@@ -44,15 +44,50 @@ export async function createTaskFromRoutine(
 
 /** マスタ追加・更新・削除 */
 export async function upsertMaster(
-    data: { id?: string; text: string; days: DayOfWeekStr[]; holiday_adjustment?: 'before' | 'after' | 'skip' }, 
+    data: {
+        id?: string;
+        text: string;
+        schedule: {
+            type: 'weekly' | 'interval' | 'monthly-day' | 'monthly-weekday' | 'none';
+            days?: DayOfWeekStr[];
+            intervalWeeks?: number;
+            baseDate?: string;
+            monthlyDay?: number | 'last';
+            weekIndex?: number | 'last';
+        };
+        holiday_adjustment?: 'before' | 'after' | 'skip';
+    }, 
     deps: { routine: RoutineStore; tasks: TaskStore; ui: UIStore; config: ConfigStore; notes: NoteStore }
 ): Promise<void> {
     const { routine, tasks, ui, config, notes } = deps;
 
     if (!data.text) throw new Error('タスク名を入力してください');
+    if (!data.schedule) throw new Error('スケジュールを設定してください');
 
-    const scheduleType = data.days.length > 0 ? 'weekly' : 'none';
-    const scheduleDays = data.days.length > 0 ? data.days : undefined;
+    const type = data.schedule.type;
+    if (type === 'weekly' || type === 'interval' || type === 'monthly-weekday') {
+        if (!data.schedule.days || data.schedule.days.length === 0) {
+            throw new Error('曜日を選択してください');
+        }
+    }
+    if (type === 'interval') {
+        if (!data.schedule.baseDate) {
+            throw new Error('基準日を指定してください');
+        }
+        if (data.schedule.intervalWeeks === undefined || isNaN(data.schedule.intervalWeeks) || data.schedule.intervalWeeks < 1) {
+            throw new Error('間隔（週）は1以上の整数を指定してください');
+        }
+    }
+    if (type === 'monthly-day') {
+        if (data.schedule.monthlyDay === undefined) {
+            throw new Error('指定日を指定してください');
+        }
+    }
+    if (type === 'monthly-weekday') {
+        if (data.schedule.weekIndex === undefined) {
+            throw new Error('第N週曜日を指定してください');
+        }
+    }
 
     let oldTemplate: string | undefined;
     let master: RoutineTask;
@@ -63,10 +98,7 @@ export async function upsertMaster(
         master = { 
             ...item, 
             text: data.text, 
-            schedule: {
-                type: scheduleType,
-                days: scheduleDays
-            },
+            schedule: data.schedule,
             holiday_adjustment: data.holiday_adjustment
         };
         await routine.update(master);
@@ -74,10 +106,7 @@ export async function upsertMaster(
         master = {
             id: crypto.randomUUID(),
             text: data.text,
-            schedule: {
-                type: scheduleType,
-                days: scheduleDays
-            },
+            schedule: data.schedule,
             holiday_adjustment: data.holiday_adjustment
         };
         await routine.add(master);
@@ -152,15 +181,10 @@ export async function syncGeneratedTasks(
                 }
             } else {
                 const activeM = m as RoutineTask;
-                // 生成時の日付（originalDate）に基づいて、本来のスケジュール枠が廃止されたか判定
-                const originalDayNum = getDayOfWeek(originalDate);
-                const originalDayStr = DAYS_MAP[originalDayNum];
 
-                // その曜日の枠自体が廃止されたか
+                // スケジュール枠自体が廃止されたか
                 const isSlotAbolished = !activeM.schedule || 
-                    activeM.schedule.type !== 'weekly' || 
-                    !activeM.schedule.days || 
-                    !activeM.schedule.days.includes(originalDayStr);
+                    !isScheduledOn(activeM, parseLocalDate(originalDate));
 
                 if (isSlotAbolished && isStillInOriginalSlot) {
                     // 枠自体が廃止され、かつユーザーが動かした形跡もない場合は、不要なタスクとして削除
