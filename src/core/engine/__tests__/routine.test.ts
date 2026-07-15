@@ -19,21 +19,21 @@ describe('routineEngine', () => {
             
             expect(result).toHaveLength(2);
             expect(result[0].text).toBe('Daily Task');
-            expect(result[0].periodicId).toBe('1');
+            expect(result[0].routineId).toBe('1');
             expect(result[1].text).toBe('Mon Task');
-            expect(result[1].periodicId).toBe('2');
+            expect(result[1].routineId).toBe('2');
         });
 
         it('既にタスクが存在する場合は生成しないこと', () => {
             const date = '2026-06-08';
             const existingTasks: Task[] = [
-                { id: 'a', text: 'Daily Task', done: false, originalDate: date, date, periodicId: '1' }
+                { id: 'a', text: 'Daily Task', done: false, originalDate: date, date, routineId: '1' }
             ];
             const result = computeMissingRoutineTasks(masters, existingTasks, date);
             
             expect(result).toHaveLength(1);
             expect(result[0].text).toBe('Mon Task');
-            expect(result[0].periodicId).toBe('2');
+            expect(result[0].routineId).toBe('2');
         });
 
         it('祝日かつスキップルールの場合は生成しないこと', () => {

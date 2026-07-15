@@ -24,8 +24,8 @@ export function computeMissingRoutineTasks(
             continue;
         }
 
-        // すでに existingTasks に periodicId === m.id があるかチェック
-        if (existingTasks.some(t => t.periodicId === m.id)) {
+        // すでに existingTasks に routineId === m.id があるかチェック
+        if (existingTasks.some(t => t.routineId === m.id)) {
             continue;
         }
 
@@ -85,7 +85,7 @@ export function computeMissingRoutineTasks(
 
         if (shouldGenerate) {
             const task = createTask(m.text, date);
-            task.periodicId = m.id;
+            task.routineId = m.id;
             task.originalDate = originalDateStr; // 本来の予定日を設定
             newTasks.push(task);
         }

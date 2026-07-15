@@ -145,15 +145,15 @@
             position: relative; /* 子要素の配置基準 */
         }
 
-        /* Periodic Task UI Styles */
-        .periodic-list { max-height: 250px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border); }
-        .periodic-item { 
+        /* Routine Task UI Styles */
+        .routine-list { max-height: 250px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border); }
+        .routine-item { 
             display: flex; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);
             font-size: 13px; gap: 10px;
         }
-        .periodic-item:last-child { border-bottom: none; }
-        .periodic-info { flex: 1; }
-        .periodic-days { font-size: 11px; color: var(--ring); margin-top: 2px; }
+        .routine-item:last-child { border-bottom: none; }
+        .routine-info { flex: 1; }
+        .routine-days { font-size: 11px; color: var(--ring); margin-top: 2px; }
         .day-chip-container { display: flex; gap: 3px; margin-top: 10px; }
         .day-checkbox { display: none; }
         .day-label { 

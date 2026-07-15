@@ -11,7 +11,7 @@ src/
 │   ├── store/        # アプリの状態管理（データ金庫）。
 │   └── storage.ts    # [API層] File System Access API を隠蔽。初期化ガード、直列化を担当。
 ├── features/         # [機能（ドメイン）単位の分割]
-│   └── (inbox, notes, periodic, tasks...)
+│   └── (inbox, notes, routine, tasks...)
 │       ├── ui.ts       # [Presentation] HTML文字列への変換（Pure）。
 │       ├── renderer.ts # [View] DOMへの反映、クラス操作等のUI手順（Impure）。
 │       └── logic.ts    # [Business] UIイベントを受けてStore/Engineを繋ぐ手順（Impure）。

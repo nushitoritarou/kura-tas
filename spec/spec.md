@@ -71,7 +71,7 @@ HTML 1ファイルで完結し、File System Access API を通じてローカル
 - `/tasks/[YYYY-MM-DD].json`: 日付別タスクデータ。
 - `/inbox.json`: Inboxデータ。
 - `/links.json`: 共通リンク集。
-- `/periodic.json`: 定期タスク定義。
+- `/routine.json`: 定期タスク定義.
 - `/config.json`: アプリ設定。
 - `/notes/*.md`: 手順書（フロントマター付きMarkdown）。
 
