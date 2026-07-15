@@ -432,6 +432,22 @@ async function bootstrap() {
                 }
             },
             {
+                label: '定期タスクに登録',
+                action: async () => {
+                    try {
+                        const note = await notesLogic.getNoteForTask(task.id, task.date, { notes: store.notes, tasks: store.tasks });
+                        const noteBody = note ? note.body : '';
+
+                        const masters = await routineLogic.getMasters({ routine: store.routine });
+                        routineRenderer.renderMasterList(masters);
+                        routineRenderer.setupRoutineForm(false, { text: task.text, noteTemplate: noteBody });
+                        routineRenderer.toggleRoutineModal(true);
+                    } catch (e: any) {
+                        globalRenderer.notifyError(e.message || '定期タスク登録の初期化に失敗しました');
+                    }
+                }
+            },
+            {
                 label: '削除',
                 action: async () => {
                     if (globalRenderer.confirmAction('削除しますか？')) {
@@ -574,8 +590,9 @@ async function bootstrap() {
         }
 
         const id = el.modals.routine.btnSubmit.dataset.id;
+        const noteTemplate = el.modals.routine.btnSubmit.dataset.noteTemplate;
         await dispatchAction(async () => {
-            await routineLogic.upsertMaster({ id, text, schedule, holiday_adjustment }, { routine: store.routine, tasks: store.tasks, ui: store.ui, config: store.config, notes: store.notes });
+            await routineLogic.upsertMaster({ id, text, schedule, holiday_adjustment, noteTemplate }, { routine: store.routine, tasks: store.tasks, ui: store.ui, config: store.config, notes: store.notes });
             routineRenderer.setupRoutineForm(false);
         });
     };
