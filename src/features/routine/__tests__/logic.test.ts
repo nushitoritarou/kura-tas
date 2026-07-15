@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { upsertMaster, generateTasksFromRoutine, getMasters, deleteMaster, createTaskFromRoutine } from '../logic';
+import { upsertMaster, generateTasksFromRoutine, getMasters, deleteMaster, createTaskFromRoutine, promoteNoteToTemplate } from '../logic';
 import { RoutineStore } from '@/core/store/RoutineStore';
 import { TaskStore } from '@/core/store/TaskStore';
 import { UIStore } from '@/core/store/UIStore';
@@ -22,6 +22,7 @@ describe('routine logic', () => {
     let tasks: TaskStore;
     let ui: UIStore;
     let config: any;
+    let notes: any;
 
     beforeEach(() => {
         routine = {
@@ -46,6 +47,17 @@ describe('routine logic', () => {
             getState: vi.fn().mockReturnValue({ workDays: [1, 2, 3, 4, 5], holidays: [] }),
             update: vi.fn(),
         } as any;
+        notes = {
+            getNote: vi.fn().mockImplementation((id, context) => Promise.resolve({
+                id,
+                title: id,
+                body: '',
+                date: context.date,
+                type: 'task',
+                taskId: context.taskId
+            })),
+            saveNote: vi.fn(),
+        } as any;
         vi.clearAllMocks();
     });
 
@@ -60,7 +72,7 @@ describe('routine logic', () => {
 
     describe('upsertMaster', () => {
         it('IDがない場合、かつ曜日がある場合、weeklyスケジュールで新規追加すること', async () => {
-            await upsertMaster({ text: 'New', days: ['Mon'] }, { routine, tasks, ui, config });
+            await upsertMaster({ text: 'New', days: ['Mon'] }, { routine, tasks, ui, config, notes });
             expect(routine.add).toHaveBeenCalled();
             const saved = (routine.add as any).mock.calls[0][0];
             expect(saved.text).toBe('New');
@@ -68,7 +80,7 @@ describe('routine logic', () => {
         });
 
         it('曜日が指定されていない場合、noneスケジュールで新規追加すること', async () => {
-            await upsertMaster({ text: 'New', days: [] }, { routine, tasks, ui, config });
+            await upsertMaster({ text: 'New', days: [] }, { routine, tasks, ui, config, notes });
             expect(routine.add).toHaveBeenCalled();
             const saved = (routine.add as any).mock.calls[0][0];
             expect(saved.text).toBe('New');
@@ -78,7 +90,7 @@ describe('routine logic', () => {
         it('IDがある場合、更新すること', async () => {
             const oldItem = { id: '1', text: 'Old', schedule: { type: 'weekly' as const, days: ['Mon' as const] } };
             routine.find = vi.fn().mockReturnValue(oldItem);
-            await upsertMaster({ id: '1', text: 'New', days: ['Tue'] }, { routine, tasks, ui, config });
+            await upsertMaster({ id: '1', text: 'New', days: ['Tue'] }, { routine, tasks, ui, config, notes });
             expect(routine.update).toHaveBeenCalledWith({
                 id: '1',
                 text: 'New',
@@ -105,7 +117,7 @@ describe('routine logic', () => {
                 return Promise.resolve([]);
             });
 
-            await upsertMaster(newMasterData, { routine, tasks, ui, config });
+            await upsertMaster(newMasterData, { routine, tasks, ui, config, notes });
 
             expect(tasks.update).toHaveBeenCalledWith(expect.objectContaining({ id: 't1', text: 'New Text' }));
             expect(tasks.update).toHaveBeenCalledWith(expect.objectContaining({ id: 't2', text: 'New Text' }));
@@ -132,7 +144,7 @@ describe('routine logic', () => {
                 return Promise.resolve([]);
             });
 
-            await upsertMaster(newMasterData, { routine, tasks, ui, config });
+            await upsertMaster(newMasterData, { routine, tasks, ui, config, notes });
 
             // 月曜はスケジュール継続：テキスト更新
             expect(tasks.update).toHaveBeenCalledWith(expect.objectContaining({ id: 't1', text: 'New Text' }));
@@ -143,7 +155,7 @@ describe('routine logic', () => {
         });
 
         it('タスク名がない場合にエラーを投げること', async () => {
-            await expect(upsertMaster({ text: '', days: ['Mon'] }, { routine, tasks, ui, config })).rejects.toThrow('タスク名を入力してください');
+            await expect(upsertMaster({ text: '', days: ['Mon'] }, { routine, tasks, ui, config, notes })).rejects.toThrow('タスク名を入力してください');
         });
     });
 
@@ -239,7 +251,7 @@ describe('routine logic', () => {
         it('マスタに基づいてタスクを生成すること', async () => {
             routine.getState = vi.fn().mockReturnValue([{ id: '1', text: 'Periodic', schedule: { type: 'weekly', days: ['Mon'] } }]);
             // 2026-06-08 is Monday
-            await generateTasksFromRoutine('2026-06-08', { routine, tasks, config });
+            await generateTasksFromRoutine('2026-06-08', { routine, tasks, config, notes });
             expect(tasks.addMany).toHaveBeenCalled();
             const saved = (tasks.addMany as any).mock.calls[0][0];
             expect(saved).toHaveLength(1);
@@ -249,7 +261,7 @@ describe('routine logic', () => {
         });
 
         it('過去日の場合は生成しないこと', async () => {
-            await generateTasksFromRoutine('2026-06-07', { routine, tasks, config });
+            await generateTasksFromRoutine('2026-06-07', { routine, tasks, config, notes });
             expect(tasks.addMany).not.toHaveBeenCalled();
         });
     });
@@ -259,7 +271,7 @@ describe('routine logic', () => {
             const master = { id: 'm-1', text: 'Routine Item', schedule: { type: 'none' as const } };
             routine.find = vi.fn().mockReturnValue(master);
 
-            await createTaskFromRoutine('m-1', '2026-06-08', { routine, tasks });
+            await createTaskFromRoutine('m-1', '2026-06-08', { routine, tasks, notes });
 
             expect(routine.find).toHaveBeenCalledWith('m-1');
             expect(tasks.addMany).toHaveBeenCalled();
@@ -268,6 +280,87 @@ describe('routine logic', () => {
             expect(added[0].text).toBe('Routine Item');
             expect(added[0].routineId).toBe('m-1');
             expect(added[0].date).toBe('2026-06-08');
+        });
+    });
+
+    describe('note template and promotion', () => {
+        it('createTaskFromRoutine でマスタにテンプレートがある場合、ノートを生成すること', async () => {
+            const master = { id: 'm-1', text: 'Routine Item', schedule: { type: 'none' as const }, noteTemplate: '# Hello Template' };
+            routine.find = vi.fn().mockReturnValue(master);
+
+            await createTaskFromRoutine('m-1', '2026-06-08', { routine, tasks, notes });
+
+            expect(notes.saveNote).toHaveBeenCalledWith(expect.objectContaining({
+                body: '# Hello Template',
+                title: 'Routine Item',
+                date: '2026-06-08',
+                type: 'task'
+            }));
+        });
+
+        it('generateTasksFromRoutine でマスタにテンプレートがある場合、ノートを生成すること', async () => {
+            const masters = [{ id: 'm-1', text: 'Periodic', schedule: { type: 'weekly' as const, days: ['Mon' as const] }, noteTemplate: '# Hello Template' }];
+            routine.getState = vi.fn().mockReturnValue(masters);
+            
+            let addedTasks: any[] = [];
+            tasks.addMany = vi.fn().mockImplementation((newTasks) => {
+                addedTasks = newTasks;
+                return Promise.resolve();
+            });
+
+            await generateTasksFromRoutine('2026-06-08', { routine, tasks, config, notes });
+
+            expect(tasks.addMany).toHaveBeenCalled();
+            expect(notes.saveNote).toHaveBeenCalledWith(expect.objectContaining({
+                body: '# Hello Template',
+                title: 'Periodic',
+                date: '2026-06-08',
+                type: 'task',
+                taskId: addedTasks[0].id
+            }));
+        });
+
+        it('promoteNoteToTemplate でマスタを更新し、当日・未来の「未編集/空」のノートのみを同期すること', async () => {
+            const masterId = 'm1';
+            const master = { id: masterId, text: 'Text', schedule: { type: 'weekly' as const, days: ['Mon' as const] }, noteTemplate: 'Old Template' };
+            routine.find = vi.fn().mockReturnValue(master);
+            
+            tasks.getAvailableDates = vi.fn().mockReturnValue(['2026-06-08', '2026-06-15']);
+            
+            const taskToday = { id: 't1', text: 'Text', date: '2026-06-08', originalDate: '2026-06-08', routineId: masterId, done: false };
+            const taskFuture = { id: 't2', text: 'Text', date: '2026-06-15', originalDate: '2026-06-15', routineId: masterId, done: false };
+
+            tasks.getTasksFor = vi.fn().mockImplementation((date) => {
+                if (date === '2026-06-08') return Promise.resolve([taskToday]);
+                if (date === '2026-06-15') return Promise.resolve([taskFuture]);
+                return Promise.resolve([]);
+            });
+
+            const noteToday = { id: 'task-t1', body: 'Old Template', date: '2026-06-08', type: 'task', taskId: 't1', title: 'Text' };
+            const noteFuture = { id: 'task-t2', body: 'User Modified Content', date: '2026-06-15', type: 'task', taskId: 't2', title: 'Text' };
+
+            notes.getNote = vi.fn().mockImplementation((id) => {
+                if (id === 'task-t1') return Promise.resolve(noteToday);
+                if (id === 'task-t2') return Promise.resolve(noteFuture);
+                return Promise.resolve({ id, body: '', date: '', type: 'task' });
+            });
+
+            await promoteNoteToTemplate(masterId, 'New Template Content', { routine, tasks, notes, config });
+
+            expect(routine.update).toHaveBeenCalledWith(expect.objectContaining({
+                id: masterId,
+                noteTemplate: 'New Template Content'
+            }));
+
+            expect(notes.saveNote).toHaveBeenCalledWith(expect.objectContaining({
+                id: 'task-t1',
+                body: 'New Template Content'
+            }));
+
+            expect(notes.saveNote).not.toHaveBeenCalledWith(expect.objectContaining({
+                id: 'task-t2',
+                body: 'New Template Content'
+            }));
         });
     });
 });

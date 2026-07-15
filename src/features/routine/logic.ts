@@ -2,10 +2,11 @@ import { RoutineStore } from '@/core/store/RoutineStore';
 import { TaskStore } from '@/core/store/TaskStore';
 import { UIStore } from '@/core/store/UIStore';
 import { ConfigStore } from '@/core/store/ConfigStore';
+import { NoteStore } from '@/core/store/NoteStore';
 import { RoutineTask, DayOfWeekStr, DAYS_MAP } from '@/types';
-import { computeMissingRoutineTasks, getAdjustedDate } from '@/core/engine/routine';
+import { computeMissingRoutineTasks, getAdjustedDate, isNoteSafeToSync } from '@/core/engine/routine';
 import { getTodayStr, getDayOfWeek } from '@/core/engine/datetime';
-import { createTask } from '@/core/engine/factories';
+import { createTask, createNote, getNoteId } from '@/core/engine/factories';
 
 /** モーダルを開くためのマスタ一覧取得 */
 export async function getMasters(deps: { routine: RoutineStore }): Promise<RoutineTask[]> {
@@ -16,9 +17,9 @@ export async function getMasters(deps: { routine: RoutineStore }): Promise<Routi
 export async function createTaskFromRoutine(
     routineId: string, 
     date: string, 
-    deps: { routine: RoutineStore; tasks: TaskStore }
+    deps: { routine: RoutineStore; tasks: TaskStore; notes: NoteStore }
 ): Promise<void> {
-    const { routine, tasks } = deps;
+    const { routine, tasks, notes } = deps;
     const master = routine.find(routineId);
     if (!master) throw new Error('定型タスクが見つかりません');
 
@@ -27,24 +28,38 @@ export async function createTaskFromRoutine(
     task.routineId = master.id; // 互換性のために routineId をセット
 
     await tasks.addMany([task]);
+
+    // テンプレートノートがある場合は生成
+    if (master.noteTemplate) {
+        const note = createNote({
+            body: master.noteTemplate,
+            title: master.text,
+            date: date,
+            type: 'task',
+            taskId: task.id
+        });
+        await notes.saveNote(note);
+    }
 }
 
 /** マスタ追加・更新・削除 */
 export async function upsertMaster(
     data: { id?: string; text: string; days: DayOfWeekStr[]; holiday_adjustment?: 'before' | 'after' | 'skip' }, 
-    deps: { routine: RoutineStore; tasks: TaskStore; ui: UIStore; config: ConfigStore }
+    deps: { routine: RoutineStore; tasks: TaskStore; ui: UIStore; config: ConfigStore; notes: NoteStore }
 ): Promise<void> {
-    const { routine, tasks, ui, config } = deps;
+    const { routine, tasks, ui, config, notes } = deps;
 
     if (!data.text) throw new Error('タスク名を入力してください');
 
     const scheduleType = data.days.length > 0 ? 'weekly' : 'none';
     const scheduleDays = data.days.length > 0 ? data.days : undefined;
 
+    let oldTemplate: string | undefined;
     let master: RoutineTask;
     if (data.id) {
         const item = routine.find(data.id);
         if (!item) throw new Error('指定された定型タスクが見つかりません');
+        oldTemplate = item.noteTemplate;
         master = { 
             ...item, 
             text: data.text, 
@@ -70,10 +85,13 @@ export async function upsertMaster(
 
     // 既存タスクとの同期（当日・未来）
     await syncGeneratedTasks(master, { tasks, config });
+    if (data.id) {
+        await syncGeneratedNotes(master, oldTemplate, { tasks, notes, config });
+    }
 
     // もし表示中の日付が対象なら、即座にタスク生成を試みる
     const currentDate = ui.getState().currentDate;
-    await generateTasksFromRoutine(currentDate, { routine, tasks, config });
+    await generateTasksFromRoutine(currentDate, { routine, tasks, config, notes });
 }
 
 export async function deleteMaster(
@@ -162,7 +180,7 @@ export async function syncGeneratedTasks(
 /** 指定された日付の定期タスクをマスタから生成する */
 export async function generateTasksFromRoutine(
     date: string, 
-    deps: { routine: RoutineStore; tasks: TaskStore; config: ConfigStore }
+    deps: { routine: RoutineStore; tasks: TaskStore; config: ConfigStore; notes: NoteStore }
 ): Promise<void> {
     // 過去日には自動生成しない
     const today = getTodayStr();
@@ -179,5 +197,90 @@ export async function generateTasksFromRoutine(
 
     if (newTasks.length > 0) {
         await deps.tasks.addMany(newTasks);
+
+        // テンプレートノートの自動生成
+        for (const task of newTasks) {
+            if (!task.routineId) continue;
+            const master = masters.find(m => m.id === task.routineId);
+            if (master && master.noteTemplate) {
+                const note = createNote({
+                    body: master.noteTemplate,
+                    title: master.text,
+                    date: date,
+                    type: 'task',
+                    taskId: task.id
+                });
+                await deps.notes.saveNote(note);
+            }
+        }
     }
+}
+
+/** 既に生成済みのタスクノートをマスタのテンプレート変更に合わせて同期する（当日・未来のみ、未編集または空のみ） */
+export async function syncGeneratedNotes(
+    master: RoutineTask,
+    oldTemplate: string | undefined,
+    deps: { tasks: TaskStore; notes: NoteStore; config: ConfigStore }
+): Promise<void> {
+    const today = getTodayStr();
+    const availableDates = deps.tasks.getAvailableDates().filter(d => d >= today);
+
+    const config = deps.config.getState();
+    const workDays = config.workDays || [1, 2, 3, 4, 5];
+    const holidays = config.holidays || [];
+
+    for (const date of availableDates) {
+        const dayTasks = await deps.tasks.getTasksFor(date);
+        const matchingTasks = dayTasks.filter(t => t.routineId === master.id);
+
+        for (const task of matchingTasks) {
+            if (task.done) continue;
+
+            const originalDate = task.originalDate || task.date;
+            const expectedDate = getAdjustedDate(
+                originalDate,
+                master.holiday_adjustment || 'skip',
+                workDays,
+                holidays
+            );
+
+            // ユーザーが手動で別日付に移動したタスクは同期対象外
+            if (expectedDate !== task.date) continue;
+
+            const noteId = task.noteId || getNoteId('task', task.id);
+            const note = await deps.notes.getNote(noteId, { date, taskId: task.id });
+
+            // 安全な同期の判定（ドメインルール）
+            const isUnmodified = isNoteSafeToSync(note.body, oldTemplate);
+
+            if (isUnmodified) {
+                note.body = master.noteTemplate || '';
+                note.title = master.text; // タイトルもマスタの最新名に合わせる
+                await deps.notes.saveNote(note);
+            }
+        }
+    }
+}
+
+/** 特定のタスクノートをその定期タスクマスタのテンプレートへ「昇格」する */
+export async function promoteNoteToTemplate(
+    routineId: string,
+    noteBody: string,
+    deps: { routine: RoutineStore; tasks: TaskStore; notes: NoteStore; config: ConfigStore }
+): Promise<void> {
+    const { routine, tasks, notes, config } = deps;
+    const master = routine.find(routineId);
+    if (!master) throw new Error('指定された定型タスクが見つかりません');
+
+    const oldTemplate = master.noteTemplate;
+    
+    // マスタのテンプレートを更新
+    const updatedMaster = {
+        ...master,
+        noteTemplate: noteBody
+    };
+    await routine.update(updatedMaster);
+
+    // 既存タスクノートとの同期（当日・未来、安全な同期）
+    await syncGeneratedNotes(updatedMaster, oldTemplate, { tasks, notes, config });
 }

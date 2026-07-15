@@ -125,3 +125,12 @@ export function getAdjustedDate(
     
     return null;
 }
+
+/**
+ * タスクノートが安全に同期（テンプレートで上書き）可能かを判定する（ドメインルール）
+ * @param noteBody 現在のノート本文
+ * @param oldTemplate 更新前のテンプレート本文
+ */
+export function isNoteSafeToSync(noteBody: string, oldTemplate?: string): boolean {
+    return noteBody.trim() === '' || (oldTemplate !== undefined && noteBody === oldTemplate);
+}

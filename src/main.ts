@@ -112,10 +112,13 @@ async function initialRender() {
  */
 function renderActiveNote(note: Note, isEditMode: boolean) {
     let taskText: string | undefined;
+    let routineId: string | undefined;
     if (note.type === 'task' && note.taskId) {
-        taskText = store.tasks.getState().find(t => t.id === note.taskId)?.text;
+        const task = store.tasks.getState().find(t => t.id === note.taskId);
+        taskText = task?.text;
+        routineId = task?.routineId;
     }
-    notesRenderer.renderNoteArea(note, isEditMode, taskText);
+    notesRenderer.renderNoteArea(note, isEditMode, taskText, routineId);
 }
 
 /**
@@ -151,7 +154,7 @@ async function bootstrap() {
                     await globalLogic.setupStorage(handle, store);
                     // ストレージ初期化後に設定がロードされるため、再度Loggerを構成
                     configureLogger(store.config.getState());
-                    await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { routine: store.routine, tasks: store.tasks, config: store.config });
+                    await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
                 }, { recordHistory: false });
                 store.resetHistory(); // 起動直後の状態を「原点」にする
                 globalRenderer.showAppContainer();
@@ -173,7 +176,7 @@ async function bootstrap() {
                         await globalLogic.setupStorage(handle, store);
                         // ストレージ初期化後に設定がロードされるため、再度Loggerを構成
                         configureLogger(store.config.getState());
-                        await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { routine: store.routine, tasks: store.tasks, config: store.config });
+                        await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
                     }, { recordHistory: false });
                     store.resetHistory(); // 起動直後の状態を「原点」にする
                     globalRenderer.showAppContainer();
@@ -190,7 +193,7 @@ async function bootstrap() {
     el.nav.btnPrevDay.onclick = async () => {
         await dispatchAction(async () => {
             const nextDate = await globalLogic.shiftCurrentDate(-1, store);
-            await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config });
+            await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
         }, { recordHistory: false });
         store.resetHistory();
     };
@@ -198,7 +201,7 @@ async function bootstrap() {
     el.nav.btnNextDay.onclick = async () => {
         await dispatchAction(async () => {
             const nextDate = await globalLogic.shiftCurrentDate(1, store);
-            await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config });
+            await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
         }, { recordHistory: false });
         store.resetHistory();
     };
@@ -206,7 +209,7 @@ async function bootstrap() {
     el.nav.btnToday.onclick = async () => {
         await dispatchAction(async () => {
             const nextDate = await globalLogic.jumpToToday(store);
-            await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config });
+            await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
         }, { recordHistory: false });
         store.resetHistory();
     };
@@ -496,6 +499,35 @@ async function bootstrap() {
         });
     };
 
+    const handlePromoteNote = async () => {
+        const btnPromote = el.notes.btnPromote;
+        const routineId = btnPromote?.dataset.routineId;
+        if (!routineId) return;
+
+        if (globalRenderer.confirmAction('このノートを定期タスクのテンプレートとして登録/更新しますか？\n（当日・未来の未編集のタスクノートにも反映されます）')) {
+            await dispatchAction(async () => {
+                const note = await notesLogic.getActiveNote({ notes: store.notes, ui: store.ui, tasks: store.tasks });
+                note.body = el.notes.editor.value;
+                
+                // まず現在のノートを保存
+                await notesLogic.saveNote(note, { notes: store.notes });
+
+                // テンプレートに昇格
+                await routineLogic.promoteNoteToTemplate(
+                    routineId,
+                    note.body,
+                    { routine: store.routine, tasks: store.tasks, notes: store.notes, config: store.config }
+                );
+                
+                notesRenderer.showSaveStatus('Promoted & Synced');
+            });
+        }
+    };
+
+    if (el.notes.btnPromote) {
+        el.notes.btnPromote.onclick = handlePromoteNote;
+    }
+
     // 7. Routine関連
     const navRoutine = document.getElementById('nav-routine');
     if (navRoutine) {
@@ -516,7 +548,7 @@ async function bootstrap() {
 
         const id = el.modals.routine.btnSubmit.dataset.id;
         await dispatchAction(async () => {
-            await routineLogic.upsertMaster({ id, text, days, holiday_adjustment }, { routine: store.routine, tasks: store.tasks, ui: store.ui, config: store.config });
+            await routineLogic.upsertMaster({ id, text, days, holiday_adjustment }, { routine: store.routine, tasks: store.tasks, ui: store.ui, config: store.config, notes: store.notes });
             routineRenderer.setupRoutineForm(false);
         });
     };
@@ -542,7 +574,7 @@ async function bootstrap() {
         } else if (target.classList.contains('btn-add-task-from-routine')) {
             await dispatchAction(async () => {
                 const currentDate = store.ui.getState().currentDate;
-                await routineLogic.createTaskFromRoutine(id, currentDate, { routine: store.routine, tasks: store.tasks });
+                await routineLogic.createTaskFromRoutine(id, currentDate, { routine: store.routine, tasks: store.tasks, notes: store.notes });
             });
         }
     };
@@ -612,7 +644,8 @@ async function bootstrap() {
                 await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
                     routine: store.routine,
                     tasks: store.tasks,
-                    config: store.config
+                    config: store.config,
+                    notes: store.notes
                 });
             });
         };
@@ -641,7 +674,8 @@ async function bootstrap() {
             await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
                 routine: store.routine,
                 tasks: store.tasks,
-                config: store.config
+                config: store.config,
+                notes: store.notes
             });
             holidaysRenderer.renderHolidayList(nextHolidays);
         });
@@ -665,7 +699,8 @@ async function bootstrap() {
                     await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
                         routine: store.routine,
                         tasks: store.tasks,
-                        config: store.config
+                        config: store.config,
+                        notes: store.notes
                     });
                     holidaysRenderer.renderHolidayList(nextHolidays);
                 });
@@ -693,7 +728,7 @@ async function bootstrap() {
             await dispatchAction(async () => {
                 const updatedDate = await globalLogic.checkAndApplyDayChange(store);
                 if (updatedDate) {
-                    await routineLogic.generateTasksFromRoutine(updatedDate, { routine: store.routine, tasks: store.tasks, config: store.config });
+                    await routineLogic.generateTasksFromRoutine(updatedDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
                     updated = true;
                 }
             }, { recordHistory: false });
@@ -710,7 +745,7 @@ async function bootstrap() {
             await dispatchAction(async () => {
                 const updatedDate = await globalLogic.checkAndApplyDayChange(store);
                 if (updatedDate) {
-                    await routineLogic.generateTasksFromRoutine(updatedDate, { routine: store.routine, tasks: store.tasks, config: store.config });
+                    await routineLogic.generateTasksFromRoutine(updatedDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
                     updated = true;
                 }
             }, { recordHistory: false });

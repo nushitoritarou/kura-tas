@@ -71,6 +71,7 @@ export interface RoutineTask {
   };
   lastGenerated?: string;
   holiday_adjustment?: 'before' | 'after' | 'skip'; // 休日調整ルール
+  noteTemplate?: string;
 }
 
 declare global {

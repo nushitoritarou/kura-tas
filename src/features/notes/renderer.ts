@@ -3,8 +3,8 @@ import { getToggleBtnLabel, createPanelTitle, parseToHtml, getDisplayTitle } fro
 import { el } from '@/core/el';
 
 /** Note オブジェクトを画面に反映する */
-export function renderNoteArea(note: Note, isEditMode: boolean, taskText?: string): void {
-    const { editor, preview, panelTitle, btnToggleView } = el.notes;
+export function renderNoteArea(note: Note, isEditMode: boolean, taskText?: string, routineId?: string): void {
+    const { editor, preview, panelTitle, btnToggleView, btnPromote } = el.notes;
 
     editor.value = note.body;
     preview.innerHTML = parseToHtml(note.body);
@@ -12,6 +12,16 @@ export function renderNoteArea(note: Note, isEditMode: boolean, taskText?: strin
     const displayTitle = getDisplayTitle(note.type, taskText, note.date);
     panelTitle.textContent = createPanelTitle(displayTitle, note.type);
     btnToggleView.textContent = getToggleBtnLabel(isEditMode);
+
+    if (btnPromote) {
+        if (routineId) {
+            btnPromote.style.display = 'inline-block';
+            btnPromote.dataset.routineId = routineId;
+        } else {
+            btnPromote.style.display = 'none';
+            delete btnPromote.dataset.routineId;
+        }
+    }
 
     editor.style.display = isEditMode ? 'block' : 'none';
     if (isEditMode) {
