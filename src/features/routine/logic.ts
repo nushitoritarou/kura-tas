@@ -8,23 +8,23 @@ import { getTodayStr, getDayOfWeek } from '@/core/engine/datetime';
 import { createTask } from '@/core/engine/factories';
 
 /** モーダルを開くためのマスタ一覧取得 */
-export async function getMasters(deps: { periodic: RoutineStore }): Promise<RoutineTask[]> {
-    return deps.periodic.getState();
+export async function getMasters(deps: { routine: RoutineStore }): Promise<RoutineTask[]> {
+    return deps.routine.getState();
 }
 
 /** 手動で定型タスクからタスクを作成 */
 export async function createTaskFromRoutine(
     routineId: string, 
     date: string, 
-    deps: { periodic: RoutineStore; tasks: TaskStore }
+    deps: { routine: RoutineStore; tasks: TaskStore }
 ): Promise<void> {
-    const { periodic, tasks } = deps;
-    const master = periodic.find(routineId);
+    const { routine, tasks } = deps;
+    const master = routine.find(routineId);
     if (!master) throw new Error('定型タスクが見つかりません');
 
     // タスクを作成
     const task = createTask(master.text, date);
-    task.periodicId = master.id; // 互換性のために periodicId をセット
+    task.routineId = master.id; // 互換性のために routineId をセット
 
     await tasks.addMany([task]);
 }
@@ -32,9 +32,9 @@ export async function createTaskFromRoutine(
 /** マスタ追加・更新・削除 */
 export async function upsertMaster(
     data: { id?: string; text: string; days: DayOfWeekStr[]; holiday_adjustment?: 'before' | 'after' | 'skip' }, 
-    deps: { periodic: RoutineStore; tasks: TaskStore; ui: UIStore; config: ConfigStore }
+    deps: { routine: RoutineStore; tasks: TaskStore; ui: UIStore; config: ConfigStore }
 ): Promise<void> {
-    const { periodic, tasks, ui, config } = deps;
+    const { routine, tasks, ui, config } = deps;
 
     if (!data.text) throw new Error('タスク名を入力してください');
 
@@ -43,7 +43,7 @@ export async function upsertMaster(
 
     let master: RoutineTask;
     if (data.id) {
-        const item = periodic.find(data.id);
+        const item = routine.find(data.id);
         if (!item) throw new Error('指定された定型タスクが見つかりません');
         master = { 
             ...item, 
@@ -54,7 +54,7 @@ export async function upsertMaster(
             },
             holiday_adjustment: data.holiday_adjustment
         };
-        await periodic.update(master);
+        await routine.update(master);
     } else {
         master = {
             id: crypto.randomUUID(),
@@ -65,7 +65,7 @@ export async function upsertMaster(
             },
             holiday_adjustment: data.holiday_adjustment
         };
-        await periodic.add(master);
+        await routine.add(master);
     }
 
     // 既存タスクとの同期（当日・未来）
@@ -73,17 +73,17 @@ export async function upsertMaster(
 
     // もし表示中の日付が対象なら、即座にタスク生成を試みる
     const currentDate = ui.getState().currentDate;
-    await generateTasksFromRoutine(currentDate, { periodic, tasks, config });
+    await generateTasksFromRoutine(currentDate, { routine, tasks, config });
 }
 
 export async function deleteMaster(
     id: string, 
-    deps: { periodic: RoutineStore; tasks: TaskStore; config: ConfigStore }
+    deps: { routine: RoutineStore; tasks: TaskStore; config: ConfigStore }
 ): Promise<void> {
-    const master = deps.periodic.getState().find(m => m.id === id);
+    const master = deps.routine.getState().find(m => m.id === id);
     // 既存タスクの削除（当日・未来）
     await syncGeneratedTasks({ id, deleted: true, master }, { tasks: deps.tasks, config: deps.config });
-    await deps.periodic.remove(id);
+    await deps.routine.remove(id);
 }
 
 /** 既に生成済みのタスクをマスタの変更に合わせて同期する（当日・未来のみ） */
@@ -100,7 +100,7 @@ export async function syncGeneratedTasks(
 
     for (const date of availableDates) {
         const dayTasks = await deps.tasks.getTasksFor(date);
-        const matchingTasks = dayTasks.filter(t => t.periodicId === master.id);
+        const matchingTasks = dayTasks.filter(t => t.routineId === master.id);
 
         if (matchingTasks.length === 0) continue;
 
@@ -162,13 +162,13 @@ export async function syncGeneratedTasks(
 /** 指定された日付の定期タスクをマスタから生成する */
 export async function generateTasksFromRoutine(
     date: string, 
-    deps: { periodic: RoutineStore; tasks: TaskStore; config: ConfigStore }
+    deps: { routine: RoutineStore; tasks: TaskStore; config: ConfigStore }
 ): Promise<void> {
     // 過去日には自動生成しない
     const today = getTodayStr();
     if (date < today) return;
 
-    const masters = deps.periodic.getState();
+    const masters = deps.routine.getState();
     const existingTasks = deps.tasks.getState().filter(t => t.date === date);
 
     const config = deps.config.getState();

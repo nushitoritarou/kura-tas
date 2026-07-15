@@ -70,15 +70,15 @@ export const el = {
       btnCopySample: document.getElementById('btn-copy-sample') as HTMLElement,
       btnClose: document.getElementById('btn-close-import') as HTMLElement,
     },
-    periodic: {
-      root: document.getElementById('modal-periodic') as HTMLElement,
-      list: document.getElementById('periodic-list') as HTMLElement,
-      input: document.getElementById('periodic-new-text') as HTMLInputElement,
-      btnSubmit: document.getElementById('btn-add-periodic') as HTMLElement,
-      btnClose: document.getElementById('btn-close-periodic') as HTMLElement,
-      title: document.getElementById('periodic-modal-title') as HTMLElement,
+    routine: {
+      root: document.getElementById('modal-routine') as HTMLElement,
+      list: document.getElementById('routine-list') as HTMLElement,
+      input: document.getElementById('routine-new-text') as HTMLInputElement,
+      btnSubmit: document.getElementById('btn-add-routine') as HTMLElement,
+      btnClose: document.getElementById('btn-close-routine') as HTMLElement,
+      title: document.getElementById('routine-modal-title') as HTMLElement,
       dayCheckboxes: document.querySelectorAll('.day-checkbox') as NodeListOf<HTMLInputElement>,
-      holidayAdjustment: document.getElementById('periodic-holiday-adjustment') as HTMLSelectElement,
+      holidayAdjustment: document.getElementById('routine-holiday-adjustment') as HTMLSelectElement,
     },
     holidays: {
       root: document.getElementById('modal-holidays') as HTMLElement,

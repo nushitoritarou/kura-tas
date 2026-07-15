@@ -20,7 +20,7 @@ export interface Task {
   delegated?: boolean;
   deadline?: string;
   noteId?: string;
-  periodicId?: string;
+  routineId?: string;
   originalDate: string; // 生成時の日付（手動移動の判定に使用）
   date: string; // タスクが属する日付（例: "2024-06-01"）
 }
@@ -72,8 +72,6 @@ export interface RoutineTask {
   lastGenerated?: string;
   holiday_adjustment?: 'before' | 'after' | 'skip'; // 休日調整ルール
 }
-
-export type PeriodicTask = RoutineTask;
 
 declare global {
   const __APP_VERSION__: string;

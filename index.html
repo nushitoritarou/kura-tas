@@ -43,7 +43,7 @@
             <h2>Navigation</h2>
             <div class="nav-item" id="nav-today">🏠 今日</div>
             <div class="nav-item" id="nav-calendar">📅 カレンダー (WIP)</div>
-            <div class="nav-item" id="nav-periodic">⚙ 定型タスク</div>
+            <div class="nav-item" id="nav-routine">⚙ 定型タスク</div>
             <div class="nav-item" id="nav-import">📥 タスク読込 (AI連携)</div>
             <div class="nav-item" id="nav-holidays">📅 休日設定</div>
 
@@ -121,17 +121,17 @@
         </div>
     </div>
 
-    <!-- Modal Periodic -->
-    <div id="modal-periodic" class="modal">
+    <!-- Modal Routine -->
+    <div id="modal-routine" class="modal">
         <div class="modal-content">
             <h3>⚙ 定型タスク管理 (Master)</h3>
-            <div class="periodic-list" id="periodic-list">
+            <div class="routine-list" id="routine-list">
                 <!-- Items populated by JS -->
             </div>
             
             <div style="border-top: 1px solid var(--border); padding-top: 15px;">
-                <h4 id="periodic-modal-title" style="margin: 0 0 10px; font-size: 13px;">新規登録</h4>
-                <input type="text" id="periodic-new-text" class="inbox-input" placeholder="タスク名を入力...">
+                <h4 id="routine-modal-title" style="margin: 0 0 10px; font-size: 13px;">新規登録</h4>
+                <input type="text" id="routine-new-text" class="inbox-input" placeholder="タスク名を入力...">
                 <div class="day-chip-container">
                     <input type="checkbox" id="day-0" class="day-checkbox" value="0"><label for="day-0" class="day-label">日</label>
                     <input type="checkbox" id="day-1" class="day-checkbox" value="1"><label for="day-1" class="day-label">月</label>
@@ -142,16 +142,16 @@
                     <input type="checkbox" id="day-6" class="day-checkbox" value="6"><label for="day-6" class="day-label">土</label>
                 </div>
                 <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
-                    <label for="periodic-holiday-adjustment" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">休日調整:</label>
-                    <select id="periodic-holiday-adjustment" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                    <label for="routine-holiday-adjustment" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">休日調整:</label>
+                    <select id="routine-holiday-adjustment" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
                         <option value="skip">スキップ</option>
                         <option value="before">前営業日に移動</option>
                         <option value="after">後営業日に移動</option>
                     </select>
                 </div>
                 <div style="margin-top:15px; text-align:right;">
-                    <button class="btn" id="btn-close-periodic">閉じる</button>
-                    <button class="btn btn-primary" id="btn-add-periodic">登録する</button>
+                    <button class="btn" id="btn-close-routine">閉じる</button>
+                    <button class="btn btn-primary" id="btn-add-routine">登録する</button>
                 </div>
             </div>
         </div>

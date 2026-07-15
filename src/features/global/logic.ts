@@ -16,7 +16,7 @@ export interface GlobalDeps {
     config: ConfigStore;
     commonLinks: CommonLinkStore;
     inboxItems: InboxItemStore;
-    periodic: RoutineStore;
+    routine: RoutineStore;
     ui: UIStore;
     handle: HandleStore;
     tasks: TaskStore;
@@ -47,7 +47,7 @@ export async function setupStorage(handle: FileSystemDirectoryHandle, deps: Glob
         deps.config.load(),
         deps.commonLinks.load(),
         deps.inboxItems.load(),
-        deps.periodic.load(),
+        deps.routine.load(),
         deps.tasks.load(),
         deps.notes.load(),
         deps.ui.load()

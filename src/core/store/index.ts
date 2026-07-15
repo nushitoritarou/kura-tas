@@ -11,7 +11,7 @@ import { logger } from '@/core/logger';
 /**
  * 履歴管理（Undo/Redo）の対象となるストアのキー
  */
-export type UndoableStoreKey = 'tasks' | 'inboxItems' | 'notes' | 'commonLinks' | 'periodic';
+export type UndoableStoreKey = 'tasks' | 'inboxItems' | 'notes' | 'commonLinks' | 'routine';
 
 /**
  * アプリケーション全体のドメイン状態のスナップショット
@@ -21,7 +21,7 @@ export interface AppSnapshot {
     inboxItems: any;
     notes: any;
     commonLinks: any;
-    periodic: any;
+    routine: any;
 }
 
 export class StoreRegistry {
@@ -30,7 +30,7 @@ export class StoreRegistry {
     readonly config = new ConfigStore();
     readonly notes = new NoteStore();
     readonly commonLinks = new CommonLinkStore();
-    readonly periodic = new RoutineStore();
+    readonly routine = new RoutineStore();
     readonly ui = new UIStore();
     readonly handle = new HandleStore();
 
@@ -44,7 +44,7 @@ export class StoreRegistry {
     constructor() {
         // 変更検知の自動セットアップ
         const keys: (keyof StoreRegistry)[] = [
-            'tasks', 'inboxItems', 'config', 'notes', 'commonLinks', 'periodic', 'ui', 'handle'
+            'tasks', 'inboxItems', 'config', 'notes', 'commonLinks', 'routine', 'ui', 'handle'
         ];
         for (const key of keys) {
             const s = this[key];
@@ -79,7 +79,7 @@ export class StoreRegistry {
                 
                 // ドメインストアに変更があり、かつ履歴記録が有効な場合のみ履歴を積む
                 if (recordHistory && preSnapshot) {
-                    const undoableKeys: UndoableStoreKey[] = ['tasks', 'inboxItems', 'notes', 'commonLinks', 'periodic'];
+                    const undoableKeys: UndoableStoreKey[] = ['tasks', 'inboxItems', 'notes', 'commonLinks', 'routine'];
                     const hasDomainChange = undoableKeys.some(k => this.dirtyStores.has(k));
 
                     if (hasDomainChange) {
@@ -100,7 +100,7 @@ export class StoreRegistry {
                     await this.restoreAppSnapshot(preSnapshot);
                 }
                 // ロールバック後は全て変更されたとみなして通知（不整合防止）
-                this.dirtyStores = new Set<keyof StoreRegistry>(['tasks', 'inboxItems', 'notes', 'commonLinks', 'periodic']);
+                this.dirtyStores = new Set<keyof StoreRegistry>(['tasks', 'inboxItems', 'notes', 'commonLinks', 'routine']);
                 this.notifyCommit();
                 throw e;
             } finally {
@@ -155,7 +155,7 @@ export class StoreRegistry {
             this.redoStack.push(currentSnapshot);
             await this.restoreAppSnapshot(previousSnapshot);
             
-            this.dirtyStores = new Set<keyof StoreRegistry>(['tasks', 'inboxItems', 'notes', 'commonLinks', 'periodic']);
+            this.dirtyStores = new Set<keyof StoreRegistry>(['tasks', 'inboxItems', 'notes', 'commonLinks', 'routine']);
             logger.info(`[StoreRegistry] Undo executed. Remaining history: ${this.history.length}`);
             this.notifyCommit();
         })();
@@ -178,7 +178,7 @@ export class StoreRegistry {
             this.history.push(currentSnapshot);
             await this.restoreAppSnapshot(nextSnapshot);
             
-            this.dirtyStores = new Set<keyof StoreRegistry>(['tasks', 'inboxItems', 'notes', 'commonLinks', 'periodic']);
+            this.dirtyStores = new Set<keyof StoreRegistry>(['tasks', 'inboxItems', 'notes', 'commonLinks', 'routine']);
             logger.info(`[StoreRegistry] Redo executed. Remaining redo: ${this.redoStack.length}`);
             this.notifyCommit();
         })();
@@ -205,7 +205,7 @@ export class StoreRegistry {
             inboxItems: this.inboxItems.getSnapshot(),
             notes: this.notes.getSnapshot(),
             commonLinks: this.commonLinks.getSnapshot(),
-            periodic: this.periodic.getSnapshot(),
+            routine: this.routine.getSnapshot(),
         };
     }
 
@@ -215,7 +215,7 @@ export class StoreRegistry {
             this.inboxItems.restoreSnapshot(snapshot.inboxItems),
             this.notes.restoreSnapshot(snapshot.notes),
             this.commonLinks.restoreSnapshot(snapshot.commonLinks),
-            this.periodic.restoreSnapshot(snapshot.periodic),
+            this.routine.restoreSnapshot(snapshot.routine),
         ]);
     }
 }

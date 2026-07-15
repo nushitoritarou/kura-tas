@@ -6,17 +6,17 @@ import { patch } from '@/shared/utils/dom/diff';
 /** マスタ一覧を画面に反映する */
 export function renderMasterList(masters: RoutineTask[]): void {
     const html = createMasterListHtml(masters);
-    patch(el.modals.periodic.list, html);
+    patch(el.modals.routine.list, html);
 }
 
 /** モーダルの表示状態を切り替える */
-export function togglePeriodicModal(show: boolean): void {
-    el.modals.periodic.root.style.display = show ? 'flex' : 'none';
+export function toggleRoutineModal(show: boolean): void {
+    el.modals.routine.root.style.display = show ? 'flex' : 'none';
 }
 
 /** フォームの状態をリセットまたは設定する */
-export function setupPeriodicForm(isEdit: boolean, data?: RoutineTask): void {
-    const { title, btnSubmit, input, dayCheckboxes, holidayAdjustment } = el.modals.periodic;
+export function setupRoutineForm(isEdit: boolean, data?: RoutineTask): void {
+    const { title, btnSubmit, input, dayCheckboxes, holidayAdjustment } = el.modals.routine;
     
     title.textContent = getFormTitle(isEdit);
     btnSubmit.textContent = getSubmitBtnLabel(isEdit);

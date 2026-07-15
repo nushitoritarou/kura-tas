@@ -18,8 +18,8 @@ import * as tasksLogic from '@/features/tasks/logic';
 import * as tasksRenderer from '@/features/tasks/renderer';
 import * as notesLogic from '@/features/notes/logic';
 import * as notesRenderer from '@/features/notes/renderer';
-import * as periodicLogic from '@/features/routine/logic';
-import * as periodicRenderer from '@/features/routine/renderer';
+import * as routineLogic from '@/features/routine/logic';
+import * as routineRenderer from '@/features/routine/renderer';
 import * as holidaysLogic from '@/features/holidays/logic';
 import * as holidaysRenderer from '@/features/holidays/renderer';
 import { DAYS_MAP } from '@/types';
@@ -69,9 +69,9 @@ store.onCommit(async (dirty) => {
         linksRenderer.renderLinks(store.commonLinks.getAll());
     }
 
-    if (dirty.has('periodic')) {
-        const masters = await periodicLogic.getMasters({ periodic: store.periodic });
-        periodicRenderer.renderMasterList(masters);
+    if (dirty.has('routine')) {
+        const masters = await routineLogic.getMasters({ routine: store.routine });
+        routineRenderer.renderMasterList(masters);
     }
 
     if (dirty.has('tasks') || dirty.has('ui')) {
@@ -97,8 +97,8 @@ async function initialRender() {
     globalRenderer.updateDateDisplay(uiState.currentDate);
     inboxRenderer.renderInboxList(store.inboxItems.getAll());
     linksRenderer.renderLinks(store.commonLinks.getAll());
-    const masters = await periodicLogic.getMasters({ periodic: store.periodic });
-    periodicRenderer.renderMasterList(masters);
+    const masters = await routineLogic.getMasters({ routine: store.routine });
+    routineRenderer.renderMasterList(masters);
     const dayTasks = store.tasks.getState().filter(t => t.date === uiState.currentDate);
     tasksRenderer.renderTaskList(dayTasks, uiState.activeTaskId || undefined);
     tasksRenderer.updateCarryOverButtonVisibility(uiState.currentDate);
@@ -151,7 +151,7 @@ async function bootstrap() {
                     await globalLogic.setupStorage(handle, store);
                     // ストレージ初期化後に設定がロードされるため、再度Loggerを構成
                     configureLogger(store.config.getState());
-                    await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
+                    await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { routine: store.routine, tasks: store.tasks, config: store.config });
                 }, { recordHistory: false });
                 store.resetHistory(); // 起動直後の状態を「原点」にする
                 globalRenderer.showAppContainer();
@@ -173,7 +173,7 @@ async function bootstrap() {
                         await globalLogic.setupStorage(handle, store);
                         // ストレージ初期化後に設定がロードされるため、再度Loggerを構成
                         configureLogger(store.config.getState());
-                        await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
+                        await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, { routine: store.routine, tasks: store.tasks, config: store.config });
                     }, { recordHistory: false });
                     store.resetHistory(); // 起動直後の状態を「原点」にする
                     globalRenderer.showAppContainer();
@@ -190,7 +190,7 @@ async function bootstrap() {
     el.nav.btnPrevDay.onclick = async () => {
         await dispatchAction(async () => {
             const nextDate = await globalLogic.shiftCurrentDate(-1, store);
-            await periodicLogic.generateTasksFromRoutine(nextDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
+            await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config });
         }, { recordHistory: false });
         store.resetHistory();
     };
@@ -198,7 +198,7 @@ async function bootstrap() {
     el.nav.btnNextDay.onclick = async () => {
         await dispatchAction(async () => {
             const nextDate = await globalLogic.shiftCurrentDate(1, store);
-            await periodicLogic.generateTasksFromRoutine(nextDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
+            await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config });
         }, { recordHistory: false });
         store.resetHistory();
     };
@@ -206,7 +206,7 @@ async function bootstrap() {
     el.nav.btnToday.onclick = async () => {
         await dispatchAction(async () => {
             const nextDate = await globalLogic.jumpToToday(store);
-            await periodicLogic.generateTasksFromRoutine(nextDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
+            await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config });
         }, { recordHistory: false });
         store.resetHistory();
     };
@@ -496,53 +496,53 @@ async function bootstrap() {
         });
     };
 
-    // 7. Periodic関連
-    const navPeriodic = document.getElementById('nav-periodic');
-    if (navPeriodic) {
-        navPeriodic.onclick = async () => {
-            const masters = await periodicLogic.getMasters({ periodic: store.periodic });
-            periodicRenderer.renderMasterList(masters);
-            periodicRenderer.setupPeriodicForm(false);
-            periodicRenderer.togglePeriodicModal(true);
+    // 7. Routine関連
+    const navRoutine = document.getElementById('nav-routine');
+    if (navRoutine) {
+        navRoutine.onclick = async () => {
+            const masters = await routineLogic.getMasters({ routine: store.routine });
+            routineRenderer.renderMasterList(masters);
+            routineRenderer.setupRoutineForm(false);
+            routineRenderer.toggleRoutineModal(true);
         };
     }
 
-    el.modals.periodic.btnSubmit.onclick = async () => {
-        const text = el.modals.periodic.input.value.trim();
-        const days = Array.from(el.modals.periodic.dayCheckboxes)
+    el.modals.routine.btnSubmit.onclick = async () => {
+        const text = el.modals.routine.input.value.trim();
+        const days = Array.from(el.modals.routine.dayCheckboxes)
             .filter(cb => cb.checked)
             .map(cb => DAYS_MAP[parseInt(cb.value)]);
-        const holiday_adjustment = el.modals.periodic.holidayAdjustment.value as 'before' | 'after' | 'skip';
+        const holiday_adjustment = el.modals.routine.holidayAdjustment.value as 'before' | 'after' | 'skip';
 
-        const id = el.modals.periodic.btnSubmit.dataset.id;
+        const id = el.modals.routine.btnSubmit.dataset.id;
         await dispatchAction(async () => {
-            await periodicLogic.upsertMaster({ id, text, days, holiday_adjustment }, { periodic: store.periodic, tasks: store.tasks, ui: store.ui, config: store.config });
-            periodicRenderer.setupPeriodicForm(false);
+            await routineLogic.upsertMaster({ id, text, days, holiday_adjustment }, { routine: store.routine, tasks: store.tasks, ui: store.ui, config: store.config });
+            routineRenderer.setupRoutineForm(false);
         });
     };
 
-    el.modals.periodic.list.onclick = async (e) => {
+    el.modals.routine.list.onclick = async (e) => {
         const target = e.target as HTMLElement;
         const id = target.dataset.id;
         if (!id) return;
 
-        if (target.classList.contains('btn-edit-periodic')) {
-            const masters = await periodicLogic.getMasters({ periodic: store.periodic });
+        if (target.classList.contains('btn-edit-routine')) {
+            const masters = await routineLogic.getMasters({ routine: store.routine });
             const master = masters.find(m => m.id === id);
             if (master) {
-                periodicRenderer.setupPeriodicForm(true, master);
+                routineRenderer.setupRoutineForm(true, master);
             }
-        } else if (target.classList.contains('btn-delete-periodic')) {
+        } else if (target.classList.contains('btn-delete-routine')) {
             if (globalRenderer.confirmAction('削除しますか？')) {
                 await dispatchAction(async () => {
-                    await periodicLogic.deleteMaster(id, { periodic: store.periodic, tasks: store.tasks, config: store.config });
-                    periodicRenderer.setupPeriodicForm(false);
+                    await routineLogic.deleteMaster(id, { routine: store.routine, tasks: store.tasks, config: store.config });
+                    routineRenderer.setupRoutineForm(false);
                 });
             }
         } else if (target.classList.contains('btn-add-task-from-routine')) {
             await dispatchAction(async () => {
                 const currentDate = store.ui.getState().currentDate;
-                await periodicLogic.createTaskFromRoutine(id, currentDate, { periodic: store.periodic, tasks: store.tasks });
+                await routineLogic.createTaskFromRoutine(id, currentDate, { routine: store.routine, tasks: store.tasks });
             });
         }
     };
@@ -576,8 +576,8 @@ async function bootstrap() {
         el.modals.import.root.style.display = 'none';
     };
 
-    el.modals.periodic.btnClose.onclick = () => {
-        el.modals.periodic.root.style.display = 'none';
+    el.modals.routine.btnClose.onclick = () => {
+        el.modals.routine.root.style.display = 'none';
     };
 
     if (el.nav.btnHolidays) {
@@ -609,8 +609,8 @@ async function bootstrap() {
                 await holidaysLogic.saveHolidays(workDays, holidays, {
                     config: store.config
                 });
-                await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
-                    periodic: store.periodic,
+                await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
+                    routine: store.routine,
                     tasks: store.tasks,
                     config: store.config
                 });
@@ -638,8 +638,8 @@ async function bootstrap() {
             await holidaysLogic.saveHolidays(workDays, nextHolidays, {
                 config: store.config
             });
-            await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
-                periodic: store.periodic,
+            await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
+                routine: store.routine,
                 tasks: store.tasks,
                 config: store.config
             });
@@ -662,8 +662,8 @@ async function bootstrap() {
                     await holidaysLogic.saveHolidays(workDays, nextHolidays, {
                         config: store.config
                     });
-                    await periodicLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
-                        periodic: store.periodic,
+                    await routineLogic.generateTasksFromRoutine(store.ui.getState().currentDate, {
+                        routine: store.routine,
                         tasks: store.tasks,
                         config: store.config
                     });
@@ -673,7 +673,7 @@ async function bootstrap() {
         }
     };
 
-    [el.modals.import.root, el.modals.periodic.root, el.modals.holidays.root].forEach(m => {
+    [el.modals.import.root, el.modals.routine.root, el.modals.holidays.root].forEach(m => {
         m.onclick = (e) => {
             if (e.target === m) m.style.display = 'none';
         };
@@ -693,7 +693,7 @@ async function bootstrap() {
             await dispatchAction(async () => {
                 const updatedDate = await globalLogic.checkAndApplyDayChange(store);
                 if (updatedDate) {
-                    await periodicLogic.generateTasksFromRoutine(updatedDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
+                    await routineLogic.generateTasksFromRoutine(updatedDate, { routine: store.routine, tasks: store.tasks, config: store.config });
                     updated = true;
                 }
             }, { recordHistory: false });
@@ -710,7 +710,7 @@ async function bootstrap() {
             await dispatchAction(async () => {
                 const updatedDate = await globalLogic.checkAndApplyDayChange(store);
                 if (updatedDate) {
-                    await periodicLogic.generateTasksFromRoutine(updatedDate, { periodic: store.periodic, tasks: store.tasks, config: store.config });
+                    await routineLogic.generateTasksFromRoutine(updatedDate, { routine: store.routine, tasks: store.tasks, config: store.config });
                     updated = true;
                 }
             }, { recordHistory: false });
