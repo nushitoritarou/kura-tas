@@ -134,7 +134,9 @@ async function bootstrap() {
     // デバッグモードの判定 (URL引数優先)
     const params = new URLSearchParams(window.location.search);
     const isDebug = params.get('debug') === '1' || uiState.debugMode;
-    globalRenderer.displayVersion(uiState.version, isDebug);
+    const commitHash = typeof __COMMIT_HASH__ !== 'undefined' ? __COMMIT_HASH__ : 'unknown';
+    const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'unknown';
+    globalRenderer.displayVersion(uiState.version, isDebug, commitHash, buildTime);
 
     // 保存されたハンドルの確認
     const savedHandle = await globalLogic.checkSavedHandle(store);

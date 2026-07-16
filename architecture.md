@@ -58,3 +58,4 @@ Kura-Tas は、ブラウザの FileSystem Access API を活用した、サーバ
 - **単一ファイル化**: `vite-plugin-singlefile` を使用し、JS/CSSを全て `index.html` に埋め込む。
 - **成果物**: `dist/index.html` の1ファイルのみで動作し、ポータビリティを維持する。
 - **デバッグモード**: `npm run build:debug` または URLパラメータ `?debug=1` により詳細ログを有効化可能。
+- **環境変数の注入**: ビルド時に `package.json` のバージョン情報、Gitコミットハッシュ、ビルド日時（JST）を環境変数（`__APP_VERSION__`, `__COMMIT_HASH__`, `__BUILD_TIME__`）として注入する。これらはアプリ起動時にバージョン表記（通常時 / デバッグ時）の表示更新に利用される。
