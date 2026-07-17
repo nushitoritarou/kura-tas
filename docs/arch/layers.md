@@ -18,6 +18,7 @@ src/
 ├── shared/           # [共通基盤] ドメインに依存しない汎用UI部品やユーティリティ。
 │   └── utils/
 │       └── ui/       # [UI共通ユーティリティ] エスケープ、フォーマッタ等。ui.tsから参照可。
+├── wiring/           # [統合（配線）層] main.tsから分割された各機能ごとのイベント・状態バインドロジック。
 ├── main.ts           # [Orchestrator] アプリの初期化、配線、エントリポイント。
 └── el.ts             # [Input Ref] 画面上のHTML要素への参照地図（Inputの取得に利用）。
 ```
@@ -40,12 +41,13 @@ src/
 | **Shared (Presentation)** | `shared/xxx/ui.ts` | sharedで定義するモジュールでHTML要素を作成する純粋関数を記述。 |
 | **Shared (View)** | `shared/xxx/renderer.ts` | sharedで定義するモジュールでDOM操作に関する手続きを記述する。 |
 | **Shared (Business)** | `shared/xxx/logic` | sharedで定義するモジュールでロジックに関する手続きを記述する。 |
-| **Orchestration** | `main.ts` | ビジネスロジック層とUI層の統合。UI層の挙動とビジネスロジック層の挙動をなんのトリガーでどのような順番で実行するかを担当する。 |
+| **Wiring** | `wiring/*.ts` | 各機能単位で Logic/Renderer/Store を紐付けるイベント配線ロジック。 |
+| **Orchestration** | `main.ts` | アプリケーションのブートストラップ、および共通コンテキストの初期化。 |
 
 ### 層の分類
 - **ビジネスロジック層 (Business Logic Layer)**: `engine`, `store`, `storage`, `logic`。アプリケーションがCUIなどの別のインターフェースで提供されるとしても変わらないロジックを記述。
 - **UI層 (UI Layer)**: `el`, `ui`, `renderer`。ビジネスロジック層の計算結果をUIに反映する。
-- **統合層 (Integration Layer)**: `el`, `main`。ビジネスロジック層とUI層の統合。UI層の挙動とビジネスロジック層の挙動をなんのトリガーでどのような順番で実行するかを担当する。
+- **統合層 (Integration Layer)**: `el`, `wiring/*.ts`, `main`。ビジネスロジック層とUI層の統合。UI層の挙動とビジネスロジック層の挙動をなんのトリガーでどのような順番で実行するかを担当する。
 - **共通基盤 (Shared)**: このアプリケーション以外でも使用できるような共通部品を格納する。例：日付のフォーマット処理、一般的なモーダルUIの動きなど。
 
 ## 3. Key Patterns (主要なパターン)

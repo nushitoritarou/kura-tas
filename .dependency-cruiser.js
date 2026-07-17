@@ -146,7 +146,7 @@ module.exports = {
       comment: 'el.ts を参照できるのは main.ts と features/*/renderer.ts のみです。',
       from: {
         path: '^src/',
-        pathNot: ['^src/main\\.ts$', '^src/main\\.new\\.ts$', '^src/(features|shared)/([^/]+)/renderer\\.ts$', '^src/core/el\\.ts$']
+        pathNot: ['^src/main\\.ts$', '^src/main\\.new\\.ts$', '^src/wiring/', '^src/(features|shared)/([^/]+)/renderer\\.ts$', '^src/core/el\\.ts$']
       },
       to: { path: '^src/core/el\\.ts$' }
     },
@@ -165,7 +165,7 @@ module.exports = {
       comment: 'storage.ts を参照できるのは core/store と main.ts のみに制限します。',
       from: {
         path: '^src/',
-        pathNot: ['^src/core/store/', '^src/core/logger/', '^src/main\\.ts$', '^src/main\\.new\\.ts$', '^src/core/storage\\.ts$', '\\.test\\.ts$']
+        pathNot: ['^src/core/store/', '^src/core/logger/', '^src/main\\.ts$', '^src/main\\.new\\.ts$', '^src/wiring/', '^src/core/storage\\.ts$', '\\.test\\.ts$']
       },
       to: { path: '^src/core/storage\\.ts$' }
     },
@@ -175,7 +175,7 @@ module.exports = {
       comment: 'features 配下の logic.ts, renderer.ts は main.ts からのみ参照可能です。',
       from: {
         path: '^src/',
-        pathNot: ['^src/main\\.ts$', '^src/main\\.new\\.ts$', '\\.test\\.ts$']
+        pathNot: ['^src/main\\.ts$', '^src/main\\.new\\.ts$', '^src/wiring/', '\\.test\\.ts$']
       },
       to: { path: '^src/(features|shared)/([^/]+)/(logic|renderer)\\.ts$' }
     },
