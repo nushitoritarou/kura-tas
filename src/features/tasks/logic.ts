@@ -1,5 +1,6 @@
 import { TaskStore } from '@/core/store/TaskStore';
 import { InboxItemStore } from '@/core/store/InboxItemStore';
+import { Task } from '@/types';
 import * as factories from "@/core/engine/factories";
 import * as converters from "@/core/engine/converters";
 import * as datetime from "@/core/engine/datetime";
@@ -16,10 +17,11 @@ export async function loadDayTasks(date: string, deps: TaskDeps): Promise<void> 
 }
 
 /** 新規タスク追加 */
-export async function addTask(text: string, date: string, deps: TaskDeps): Promise<void> {
+export async function addTask(text: string, date: string, deps: TaskDeps): Promise<Task> {
     if (!text) throw new Error('内容を入力してください');
     const task = factories.createTask(text, date);
     await deps.tasks.add(task);
+    return task;
 }
 
 /** 完了状態の切り替え */

@@ -349,6 +349,10 @@
                             <td style="padding: 6px;"><kbd>m</kbd></td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">クイックタスク作成画面表示</td>
+                            <td style="padding: 6px;"><kbd>o</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 6px; font-weight: bold; color: var(--ring);">【モード切り替え】</td>
                             <td style="padding: 6px;"></td>
                         </tr>
@@ -389,6 +393,20 @@
             </div>
             <div style="margin-top:20px; text-align:right;">
                 <button class="btn btn-primary" id="btn-close-shortcuts">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Quick Task Add -->
+    <div id="modal-quick-add" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>⚡ クイックタスク追加</h3>
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="quick-add-input" class="inbox-input" placeholder="タスク名を入力..." style="width: 100%; box-sizing: border-box; margin: 0;">
+            </div>
+            <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" id="btn-close-quick-add">キャンセル</button>
+                <button class="btn btn-primary" id="btn-do-quick-add">追加</button>
             </div>
         </div>
     </div>
