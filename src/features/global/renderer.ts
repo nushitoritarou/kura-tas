@@ -24,15 +24,15 @@ export function showResumeContainer(dirName: string): void {
 /**
  * バージョン情報を表示する
  */
-export function displayVersion(version: string, isDebug: boolean): void {
+export function displayVersion(version: string, isDebug: boolean, commitHash: string = 'unknown', buildTime: string = 'unknown'): void {
+    const versionText = ui.formatVersionText(version, isDebug, commitHash, buildTime);
+    const documentTitle = ui.formatDocumentTitle(version);
+
     el.app.version.forEach(element => {
-        if (isDebug) {
-            element.style.display = 'inline';
-            element.textContent = `Version: ${version}`;
-        } else {
-            element.style.display = 'none';
-        }
+        element.style.display = 'inline';
+        element.textContent = versionText;
     });
+    document.title = documentTitle;
 }
 
 /**
