@@ -86,7 +86,17 @@
             margin-bottom: 2px; border: 1px solid transparent; cursor: pointer;
         }
         .task-item:hover { background: var(--accent); }
-        .task-item.active { background: var(--selection); border-color: var(--primary); }
+        .task-item.active {
+            background: rgba(75, 131, 205, 0.15);
+            border-color: var(--ring);
+            outline: 1px solid var(--ring);
+        }
+        body.insert-mode .task-item.active {
+            background: var(--secondary);
+            border-color: var(--border);
+            outline: none;
+            opacity: 0.8;
+        }
         .task-item.done { color: var(--done); }
         .task-item.delegated { border-left: 4px solid var(--destructive); }
         
@@ -177,3 +187,19 @@
         ::-webkit-scrollbar-track { background: var(--secondary); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--ring); }
+
+        /* kbd tag styling for keyboard shortcuts modal */
+        kbd {
+            background-color: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+            color: var(--foreground);
+            display: inline-block;
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 1;
+            padding: 3px 5px;
+            white-space: nowrap;
+            font-family: var(--font-mono);
+        }

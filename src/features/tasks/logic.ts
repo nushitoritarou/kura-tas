@@ -129,3 +129,24 @@ export async function importTasks(jsonText: string, targetDate: string, deps: Ta
         throw new Error('Invalid JSON format');
     }
 }
+
+/** リスト内の次のタスクIDを取得する */
+export function getNextTaskId(tasks: { id: string }[], currentId: string | null): string | null {
+    if (tasks.length === 0) return null;
+    if (!currentId) return tasks[0].id;
+    const index = tasks.findIndex(t => t.id === currentId);
+    if (index === -1) return tasks[0].id;
+    if (index === tasks.length - 1) return tasks[tasks.length - 1].id; // 最後の要素で止まる
+    return tasks[index + 1].id;
+}
+
+/** リスト内の前のタスクIDを取得する */
+export function getPrevTaskId(tasks: { id: string }[], currentId: string | null): string | null {
+    if (tasks.length === 0) return null;
+    if (!currentId) return tasks[tasks.length - 1].id;
+    const index = tasks.findIndex(t => t.id === currentId);
+    if (index === -1) return tasks[tasks.length - 1].id;
+    if (index === 0) return tasks[0].id; // 最初の要素で止まる
+    return tasks[index - 1].id;
+}
+

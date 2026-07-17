@@ -27,6 +27,7 @@ export const el = {
     btnUndo: document.getElementById('btn-undo') as HTMLButtonElement,
     btnRedo: document.getElementById('btn-redo') as HTMLButtonElement,
     btnHolidays: document.getElementById('nav-holidays') as HTMLElement,
+    btnShortcuts: document.getElementById('nav-shortcuts') as HTMLElement,
   },
 
   // 共通UI
@@ -97,6 +98,10 @@ export const el = {
       btnAddDate: document.getElementById('btn-add-holiday-date') as HTMLElement,
       dateList: document.getElementById('holiday-list') as HTMLElement,
       btnClose: document.getElementById('btn-close-holidays') as HTMLElement,
+    },
+    shortcuts: {
+      root: document.getElementById('modal-shortcuts') as HTMLElement,
+      btnClose: document.getElementById('btn-close-shortcuts') as HTMLElement,
     }
   }
 };
