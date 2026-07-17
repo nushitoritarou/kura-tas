@@ -106,14 +106,23 @@
     <div id="modal-import" class="modal">
         <div class="modal-content">
             <h3>タスクを一括読込 (AI連携)</h3>
-            <div style="background:var(--secondary); padding:10px; font-size:11px; border:1px solid var(--border); position:relative; margin-bottom:10px;">
-                <pre id="import-sample">[
-  {"text": "要件定義の確認", "deadline": "2026-05-10"},
-  {"text": "API設計のレビュー", "delegated": true}
-]</pre>
+            <!-- Import Sample Area (hidden by default) -->
+            <div id="import-sample-container" style="display:none; background:var(--secondary); padding:10px; font-size:11px; border:1px solid var(--border); position:relative; margin-bottom:10px;">
+                <pre id="import-sample" style="margin:0; font-family:var(--font-mono);"></pre>
                 <button class="btn" id="btn-copy-sample" style="position:absolute; top:5px; right:5px; font-size:10px;">コピー</button>
             </div>
-            <textarea id="import-area" style="width:100%; height:150px; font-family:var(--font-mono); padding:10px; border:1px solid var(--border);" placeholder="ここにAIの回答を貼り付け..."></textarea>
+            <div style="margin-bottom:10px; display:flex; align-items:center; gap:8px; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                    <label for="import-format" style="font-size:12px; color:var(--muted-foreground); white-space:nowrap;">入力形式:</label>
+                    <select id="import-format" class="inbox-input" style="flex:1; margin:0; padding:4px;">
+                        <option value="auto">自動判別 (Auto-detect)</option>
+                        <option value="json">JSON形式 (JSON Array)</option>
+                        <option value="text">改行区切りテキスト (Plain Text / Line-by-line)</option>
+                    </select>
+                </div>
+                <button class="btn" id="btn-toggle-sample" style="font-size:12px; padding:4px 8px; white-space:nowrap;">💡 サンプル</button>
+            </div>
+            <textarea id="import-area" style="width:100%; height:150px; font-family:var(--font-mono); padding:10px; border:1px solid var(--border);" placeholder="ここにAIの回答（JSON）や、1行1タスクのテキストを貼り付け..."></textarea>
             <div style="margin-top:15px; text-align:right;">
                 <button class="btn" id="btn-close-import">キャンセル</button>
                 <button class="btn btn-primary" id="btn-do-import">インポート</button>

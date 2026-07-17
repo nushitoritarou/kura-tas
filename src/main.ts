@@ -475,18 +475,42 @@ async function bootstrap() {
     }
 
     // インポート
+    const updateImportSample = () => {
+        const format = el.modals.import.format.value;
+        if (format === 'text') {
+            el.modals.import.samplePre.textContent = `要件定義の確認\nAPI設計のレビュー`;
+        } else {
+            el.modals.import.samplePre.textContent = `[\n  {"text": "要件定義の確認", "deadline": "2026-05-10"},\n  {"text": "API設計のレビュー", "delegated": true}\n]`;
+        }
+    };
+
     const btnNavImport = document.getElementById('nav-import');
     if (btnNavImport) {
         btnNavImport.onclick = () => {
             el.modals.import.root.style.display = 'flex';
+            el.modals.import.sampleContainer.style.display = 'none';
+            el.modals.import.btnToggleSample.classList.remove('btn-primary');
+            el.modals.import.format.value = 'auto';
+            updateImportSample();
         };
     }
 
+    el.modals.import.format.onchange = () => {
+        updateImportSample();
+    };
+
+    el.modals.import.btnToggleSample.onclick = () => {
+        const isHidden = el.modals.import.sampleContainer.style.display === 'none';
+        el.modals.import.sampleContainer.style.display = isHidden ? 'block' : 'none';
+        el.modals.import.btnToggleSample.classList.toggle('btn-primary', isHidden);
+    };
+
     el.modals.import.btnDoImport.onclick = async () => {
         const jsonText = el.modals.import.area.value;
+        const format = el.modals.import.format.value as 'auto' | 'json' | 'text';
         const targetDate = store.ui.getState().currentDate;
         await dispatchAction(async () => {
-            await tasksLogic.importTasks(jsonText, targetDate, store);
+            await tasksLogic.importTasks(jsonText, targetDate, format, store);
             el.modals.import.area.value = '';
             el.modals.import.root.style.display = 'none';
         });
@@ -646,7 +670,7 @@ async function bootstrap() {
 
     // その他 UI 部品の設定
     el.modals.import.btnCopySample.onclick = () => {
-        const sample = (document.getElementById('import-sample') as HTMLElement).textContent || '';
+        const sample = el.modals.import.samplePre.textContent || '';
         navigator.clipboard.writeText(sample);
     };
 

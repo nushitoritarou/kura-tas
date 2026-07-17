@@ -108,24 +108,76 @@ export async function carryOverTasks(targetDate: string, days: number, deps: Tas
     return tasksAddedCount;
 }
 
-/** JSON形式からのインポート */
-export async function importTasks(jsonText: string, targetDate: string, deps: TaskDeps): Promise<void> {
-    try {
-        const data = JSON.parse(jsonText);
-        if (Array.isArray(data)) {
-            for (const item of data) {
-                const text = typeof item === 'string' ? item : (item.text || '');
-                if (!text) continue;
-                
-                const task = factories.createTask(text, targetDate);
-                if (typeof item === 'object') {
-                    task.deadline = item.deadline || '';
-                    task.delegated = !!item.delegated;
-                }
-                await deps.tasks.add(task);
+/** タスクの一括インポート */
+export async function importTasks(
+    inputText: string, 
+    targetDate: string, 
+    format: 'auto' | 'json' | 'text', 
+    deps: TaskDeps
+): Promise<void> {
+    const trimmedInput = inputText.trim();
+    if (!trimmedInput) return;
+
+    if (format === 'text') {
+        await importFromText(trimmedInput, targetDate, deps);
+    } else if (format === 'json') {
+        await importFromJson(trimmedInput, targetDate, deps);
+    } else {
+        const isLikelyJson = trimmedInput.startsWith('[');
+        if (isLikelyJson) {
+            await importFromJson(trimmedInput, targetDate, deps);
+        } else {
+            let data: any;
+            let isJsonArray = false;
+            try {
+                data = JSON.parse(trimmedInput);
+                isJsonArray = Array.isArray(data);
+            } catch (e) {
+                // パース失敗時は JSON ではないとみなす
+            }
+
+            if (isJsonArray) {
+                await processJsonData(data, targetDate, deps);
+            } else {
+                await importFromText(trimmedInput, targetDate, deps);
             }
         }
+    }
+}
+
+async function importFromJson(jsonText: string, targetDate: string, deps: TaskDeps): Promise<void> {
+    let data: any;
+    try {
+        data = JSON.parse(jsonText);
     } catch (e) {
         throw new Error('Invalid JSON format');
+    }
+
+    if (!Array.isArray(data)) {
+        throw new Error('JSON data must be an array');
+    }
+    await processJsonData(data, targetDate, deps);
+}
+
+async function processJsonData(data: any[], targetDate: string, deps: TaskDeps): Promise<void> {
+    for (const item of data) {
+        const text = typeof item === 'string' ? item : (item?.text || '');
+        if (!text) continue;
+        
+        const task = factories.createTask(text, targetDate);
+        if (typeof item === 'object' && item !== null) {
+            task.deadline = item.deadline || '';
+            task.delegated = !!item.delegated;
+        }
+        await deps.tasks.add(task);
+    }
+}
+
+async function importFromText(text: string, targetDate: string, deps: TaskDeps): Promise<void> {
+    const lines = text.split(/\r?\n/).map(line => line.trim());
+    for (const line of lines) {
+        if (!line) continue;
+        const task = factories.createTask(line, targetDate);
+        await deps.tasks.add(task);
     }
 }
