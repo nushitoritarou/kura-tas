@@ -78,6 +78,15 @@ store.onCommit(async (dirty) => {
         const dayTasks = store.tasks.getState().filter(t => t.date === uiState.currentDate);
         tasksRenderer.renderTaskList(dayTasks, uiState.activeTaskId || undefined);
         tasksRenderer.updateCarryOverButtonVisibility(uiState.currentDate);
+
+        if (uiState.activeTaskId) {
+            setTimeout(() => {
+                const activeEl = el.tasks.list.querySelector(`.task-item[data-id="${uiState.activeTaskId}"]`);
+                if (activeEl) {
+                    activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            }, 0);
+        }
     }
 
     if (dirty.has('notes') || dirty.has('ui') || dirty.has('tasks')) {
@@ -626,8 +635,79 @@ async function bootstrap() {
     };
 
     // 8. Shortcuts
+    let lastKey = '';
+    let lastKeyTime = 0;
+
+    const isNormalMode = (): boolean => {
+        const active = document.activeElement;
+        if (!active) return true;
+        const tagName = active.tagName.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
+            return false;
+        }
+        if (active.hasAttribute('contenteditable')) {
+            return false;
+        }
+        return true;
+    };
+
     window.onkeydown = async (e) => {
+        // インサートモード（フォーカス中）でも動作する Esc キーのハンドリング
+        if (e.key === 'Escape') {
+            lastKey = ''; // バッファクリア
+            const active = document.activeElement;
+            if (active && (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement)) {
+                active.blur();
+                e.preventDefault();
+            }
+            // ショートカットモーダルが開いていたら閉じる
+            if (globalRenderer.isShortcutsModalShown()) {
+                globalRenderer.toggleShortcutsModal(false);
+                e.preventDefault();
+            }
+            // 定期タスクモーダルが開いていたら閉じる
+            if (el.modals.routine.root.style.display === 'flex') {
+                routineRenderer.toggleRoutineModal(false);
+                e.preventDefault();
+            }
+            // 休日設定モーダルが開いていたら閉じる
+            if (el.modals.holidays.root.style.display === 'flex') {
+                holidaysRenderer.toggleHolidaysModal(false);
+                e.preventDefault();
+            }
+            // インポートモーダルが開いていたら閉じる
+            if (el.modals.import.root.style.display === 'flex') {
+                el.modals.import.root.style.display = 'none';
+                e.preventDefault();
+            }
+            return;
+        }
+
+        // 入力中の場合は通常の入力を優先（ショートカットを無効化）
+        if (!isNormalMode()) {
+            lastKey = ''; // バッファクリア
+            // 例外的に、インサートモードでのCtrl系ショートカットは許可する
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 's') {
+                    e.preventDefault();
+                    await handleSaveNote();
+                } else if (e.key === 'p') {
+                    e.preventDefault();
+                    el.notes.btnToggleView.click();
+                } else if (e.key === 'z') {
+                    e.preventDefault();
+                    await store.undo();
+                } else if (e.key === 'y') {
+                    e.preventDefault();
+                    await store.redo();
+                }
+            }
+            return;
+        }
+
+        // ここからノーマルモードのショートカット
         if (e.ctrlKey || e.metaKey) {
+            lastKey = ''; // バッファクリア
             if (e.key === 's') {
                 e.preventDefault();
                 await handleSaveNote();
@@ -641,6 +721,159 @@ async function bootstrap() {
                 e.preventDefault();
                 await store.redo();
             }
+            return;
+        }
+
+        // 単一キー
+        const now = Date.now();
+        const isDoubleD = lastKey === 'd' && e.key === 'd' && (now - lastKeyTime < 1000);
+        const isDoubleG = lastKey === 'g' && e.key === 'g' && (now - lastKeyTime < 1000);
+
+        // キーバッファの更新
+        if (e.key === 'd' && !isDoubleD) {
+            lastKey = 'd';
+            lastKeyTime = now;
+            return;
+        }
+        if (e.key === 'g' && !isDoubleG) {
+            lastKey = 'g';
+            lastKeyTime = now;
+            return;
+        }
+
+        lastKey = ''; // リセット
+
+        // 各種キーのハンドリング
+        if (e.key === 'j' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const currentDate = store.ui.getState().currentDate;
+            const dayTasks = store.tasks.getState().filter(t => t.date === currentDate);
+            const currentId = store.ui.getState().activeTaskId;
+            const nextId = tasksLogic.getNextTaskId(dayTasks, currentId);
+            if (nextId) {
+                await dispatchAction(async () => {
+                    store.ui.update({ activeTaskId: nextId });
+                }, { recordHistory: false });
+            }
+        } else if (e.key === 'k' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const currentDate = store.ui.getState().currentDate;
+            const dayTasks = store.tasks.getState().filter(t => t.date === currentDate);
+            const currentId = store.ui.getState().activeTaskId;
+            const prevId = tasksLogic.getPrevTaskId(dayTasks, currentId);
+            if (prevId) {
+                await dispatchAction(async () => {
+                    store.ui.update({ activeTaskId: prevId });
+                }, { recordHistory: false });
+            }
+        } else if (isDoubleG) {
+            e.preventDefault();
+            const currentDate = store.ui.getState().currentDate;
+            const dayTasks = store.tasks.getState().filter(t => t.date === currentDate);
+            if (dayTasks.length > 0) {
+                await dispatchAction(async () => {
+                    store.ui.update({ activeTaskId: dayTasks[0].id });
+                }, { recordHistory: false });
+            }
+        } else if (e.key === 'G') {
+            e.preventDefault();
+            const currentDate = store.ui.getState().currentDate;
+            const dayTasks = store.tasks.getState().filter(t => t.date === currentDate);
+            if (dayTasks.length > 0) {
+                await dispatchAction(async () => {
+                    store.ui.update({ activeTaskId: dayTasks[dayTasks.length - 1].id });
+                }, { recordHistory: false });
+            }
+        } else if (e.key === 'h' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            await dispatchAction(async () => {
+                const nextDate = await globalLogic.shiftCurrentDate(-1, store);
+                await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
+            }, { recordHistory: false });
+            store.resetHistory();
+        } else if (e.key === 'l' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            await dispatchAction(async () => {
+                const nextDate = await globalLogic.shiftCurrentDate(1, store);
+                await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
+            }, { recordHistory: false });
+            store.resetHistory();
+        } else if (e.key === 'Home') {
+            e.preventDefault();
+            await dispatchAction(async () => {
+                const nextDate = await globalLogic.jumpToToday(store);
+                await routineLogic.generateTasksFromRoutine(nextDate, { routine: store.routine, tasks: store.tasks, config: store.config, notes: store.notes });
+            }, { recordHistory: false });
+            store.resetHistory();
+        } else if (e.key === 'x') {
+            e.preventDefault();
+            const activeId = store.ui.getState().activeTaskId;
+            if (activeId) {
+                await dispatchAction(async () => {
+                    await tasksLogic.toggleTaskDone(activeId, store);
+                });
+            }
+        } else if (e.key === 'w') {
+            e.preventDefault();
+            const activeId = store.ui.getState().activeTaskId;
+            if (activeId) {
+                await dispatchAction(async () => {
+                    await tasksLogic.toggleTaskDelegated(activeId, store);
+                });
+            }
+        } else if (isDoubleD) {
+            e.preventDefault();
+            const activeId = store.ui.getState().activeTaskId;
+            if (activeId) {
+                await dispatchAction(async () => {
+                    await tasksLogic.deleteTask(activeId, store);
+                    store.ui.update({ activeTaskId: null });
+                }, { recordHistory: false }); // Note: tasksLogic.deleteTask records history, but we want UI updates to propagate. wrapping them together works, or logic automatically triggers it. Since deleteTask calls domain logic inside dispatchAction, we should wrap the whole operation.
+            }
+        } else if (e.key === 'r') {
+            e.preventDefault();
+            const activeId = store.ui.getState().activeTaskId;
+            if (activeId) {
+                const task = store.tasks.find(activeId);
+                if (task) {
+                    const newText = globalRenderer.promptUser('名称編集', task.text);
+                    if (newText !== null) {
+                        await dispatchAction(async () => {
+                            await tasksLogic.renameTask(activeId, newText.trim(), store);
+                        });
+                    }
+                }
+            }
+        } else if (e.key === 'm') {
+            e.preventDefault();
+            const activeId = store.ui.getState().activeTaskId;
+            if (activeId) {
+                await dispatchAction(async () => {
+                    await tasksLogic.moveTaskToNextWorkDay(activeId, store);
+                    store.ui.update({ activeTaskId: null });
+                });
+            }
+        } else if (e.key === 'i') {
+            e.preventDefault();
+            el.inbox.input.focus();
+        } else if (e.key === 'e') {
+            e.preventDefault();
+            if (!store.ui.getState().isEditMode) {
+                await dispatchAction(async () => {
+                    store.ui.update({ isEditMode: true });
+                }, { recordHistory: false });
+            }
+            setTimeout(() => {
+                el.notes.editor.focus();
+            }, 50);
+        } else if (e.key === '?' || e.key === 'Help') {
+            e.preventDefault();
+            // ショートカットモーダルの表示状態をトグル
+            const isShown = globalRenderer.isShortcutsModalShown();
+            globalRenderer.toggleShortcutsModal(!isShown);
+        } else if (e.key === 'u') {
+            e.preventDefault();
+            await store.undo();
         }
     };
 
@@ -657,6 +890,15 @@ async function bootstrap() {
     el.modals.routine.btnClose.onclick = () => {
         el.modals.routine.root.style.display = 'none';
     };
+
+    el.modals.shortcuts.btnClose.onclick = () => {
+        globalRenderer.toggleShortcutsModal(false);
+    };
+
+    el.nav.btnShortcuts.onclick = () => {
+        globalRenderer.toggleShortcutsModal(true);
+    };
+
 
     if (el.nav.btnHolidays) {
         el.nav.btnHolidays.onclick = () => {
@@ -800,6 +1042,26 @@ async function bootstrap() {
             }
         }
     }, 60 * 1000);
+
+    // 10. モード切り替え用のフォーカス監視
+    const updateModeClass = () => {
+        const active = document.activeElement;
+        const isInput = active && (
+            active.tagName.toLowerCase() === 'input' ||
+            active.tagName.toLowerCase() === 'textarea' ||
+            active.tagName.toLowerCase() === 'select' ||
+            active.hasAttribute('contenteditable')
+        );
+        if (isInput) {
+            document.body.classList.add('insert-mode');
+        } else {
+            document.body.classList.remove('insert-mode');
+        }
+    };
+    window.addEventListener('focusin', updateModeClass);
+    window.addEventListener('focusout', () => {
+        setTimeout(updateModeClass, 10);
+    });
 }
 
 // 起動

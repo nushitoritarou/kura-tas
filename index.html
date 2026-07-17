@@ -45,6 +45,8 @@
             <div class="nav-item" id="nav-routine">⚙ 定型タスク</div>
             <div class="nav-item" id="nav-import">📥 タスク読込 (AI連携)</div>
             <div class="nav-item" id="nav-holidays">📅 休日設定</div>
+            <div class="nav-item" id="nav-shortcuts" style="font-size: 11px; opacity: 0.6; margin-top: 10px;">⌨ ショートカット (Shift+?)</div>
+
 
             <div class="inbox-area">
                 <h2>Inbox (Stock)</h2>
@@ -260,6 +262,124 @@
             
             <div style="margin-top:20px; text-align:right;">
                 <button class="btn btn-primary" id="btn-close-holidays">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Keyboard Shortcuts -->
+    <div id="modal-shortcuts" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>⌨ キーボードショートカット一覧</h3>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                            <th style="padding: 6px;">操作</th>
+                            <th style="padding: 6px;">キー</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold;">ヘルプの表示/非表示</td>
+                            <td style="padding: 6px;"><kbd>?</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold; color: var(--ring);">【ナビゲーション】</td>
+                            <td style="padding: 6px;"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">下のタスクを選択</td>
+                            <td style="padding: 6px;"><kbd>j</kbd> / <kbd>↓</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">上のタスクを選択</td>
+                            <td style="padding: 6px;"><kbd>k</kbd> / <kbd>↑</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">最初のタスクを選択</td>
+                            <td style="padding: 6px;"><kbd>g</kbd> <kbd>g</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">最後のタスクを選択</td>
+                            <td style="padding: 6px;"><kbd>G</kbd> (Shift+g)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">前の日付へ移動</td>
+                            <td style="padding: 6px;"><kbd>h</kbd> / <kbd>←</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">次の日付へ移動</td>
+                            <td style="padding: 6px;"><kbd>l</kbd> / <kbd>→</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">今日の日付へ移動</td>
+                            <td style="padding: 6px;"><kbd>Home</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold; color: var(--ring);">【タスク操作】</td>
+                            <td style="padding: 6px;"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスク完了/未完了トグル</td>
+                            <td style="padding: 6px;"><kbd>x</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">他者依頼（Delegated）トグル</td>
+                            <td style="padding: 6px;"><kbd>w</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスクの削除（即削除）</td>
+                            <td style="padding: 6px;"><kbd>d</kbd> <kbd>d</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスク名の編集</td>
+                            <td style="padding: 6px;"><kbd>r</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスクを明日（翌営業日）に移動</td>
+                            <td style="padding: 6px;"><kbd>m</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold; color: var(--ring);">【モード切り替え】</td>
+                            <td style="padding: 6px;"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">Inbox入力欄にフォーカス (新規タスク用)</td>
+                            <td style="padding: 6px;"><kbd>i</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスクメモ編集にフォーカス</td>
+                            <td style="padding: 6px;"><kbd>e</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">入力フォーカスを外す（ノーマルモード）</td>
+                            <td style="padding: 6px;"><kbd>Esc</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold; color: var(--ring);">【その他】</td>
+                            <td style="padding: 6px;"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">操作を元に戻す (Undo)</td>
+                            <td style="padding: 6px;"><kbd>u</kbd> / <kbd>Ctrl+z</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">操作をやり直す (Redo)</td>
+                            <td style="padding: 6px;"><kbd>Ctrl+r</kbd> / <kbd>Ctrl+y</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">メモ保存</td>
+                            <td style="padding: 6px;"><kbd>Ctrl+s</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">メモのプレビュー/編集切り替え</td>
+                            <td style="padding: 6px;"><kbd>Ctrl+p</kbd></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn btn-primary" id="btn-close-shortcuts">閉じる</button>
             </div>
         </div>
     </div>

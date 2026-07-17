@@ -169,4 +169,55 @@ describe('tasks logic', () => {
             await expect(logic.importTasks('invalid json', '2024-06-01', deps)).rejects.toThrow('Invalid JSON format');
         });
     });
+
+    describe('getNextTaskId / getPrevTaskId', () => {
+        const mockTasks = [
+            { id: 'task-1' },
+            { id: 'task-2' },
+            { id: 'task-3' }
+        ];
+
+        it('getNextTaskId: 空リストの場合はnullを返すこと', () => {
+            expect(logic.getNextTaskId([], null)).toBeNull();
+        });
+
+        it('getNextTaskId: currentIdがnullの場合は最初のタスクIDを返すこと', () => {
+            expect(logic.getNextTaskId(mockTasks, null)).toBe('task-1');
+        });
+
+        it('getNextTaskId: currentIdがリストにない場合は最初のタスクIDを返すこと', () => {
+            expect(logic.getNextTaskId(mockTasks, 'unknown')).toBe('task-1');
+        });
+
+        it('getNextTaskId: 次のタスクIDを取得できること', () => {
+            expect(logic.getNextTaskId(mockTasks, 'task-1')).toBe('task-2');
+            expect(logic.getNextTaskId(mockTasks, 'task-2')).toBe('task-3');
+        });
+
+        it('getNextTaskId: 最後のタスクの場合は最後のタスクIDのままであること', () => {
+            expect(logic.getNextTaskId(mockTasks, 'task-3')).toBe('task-3');
+        });
+
+        it('getPrevTaskId: 空リストの場合はnullを返すこと', () => {
+            expect(logic.getPrevTaskId([], null)).toBeNull();
+        });
+
+        it('getPrevTaskId: currentIdがnullの場合は最後のタスクIDを返すこと', () => {
+            expect(logic.getPrevTaskId(mockTasks, null)).toBe('task-3');
+        });
+
+        it('getPrevTaskId: currentIdがリストにない場合は最後のタスクIDを返すこと', () => {
+            expect(logic.getPrevTaskId(mockTasks, 'unknown')).toBe('task-3');
+        });
+
+        it('getPrevTaskId: 前のタスクIDを取得できること', () => {
+            expect(logic.getPrevTaskId(mockTasks, 'task-3')).toBe('task-2');
+            expect(logic.getPrevTaskId(mockTasks, 'task-2')).toBe('task-1');
+        });
+
+        it('getPrevTaskId: 最初のタスクの場合は最初のタスクIDのままであること', () => {
+            expect(logic.getPrevTaskId(mockTasks, 'task-1')).toBe('task-1');
+        });
+    });
 });
+
