@@ -675,6 +675,12 @@ async function bootstrap() {
         return true;
     };
 
+    const getNextActiveTaskId = (activeId: string): string | null => {
+        const currentDate = store.ui.getState().currentDate;
+        const dayTasks = store.tasks.getState().filter(t => t.date === currentDate);
+        return tasksLogic.getTaskIdAfterRemoval(dayTasks, activeId);
+    };
+
     window.onkeydown = async (e) => {
         // インサートモード（フォーカス中）でも動作する Esc キーのハンドリング
         if (e.key === 'Escape') {
@@ -849,9 +855,10 @@ async function bootstrap() {
             e.preventDefault();
             const activeId = store.ui.getState().activeTaskId;
             if (activeId) {
+                const nextActiveId = getNextActiveTaskId(activeId);
                 await dispatchAction(async () => {
                     await tasksLogic.deleteTask(activeId, store);
-                    store.ui.update({ activeTaskId: null });
+                    store.ui.update({ activeTaskId: nextActiveId });
                 }, { recordHistory: false }); // Note: tasksLogic.deleteTask records history, but we want UI updates to propagate. wrapping them together works, or logic automatically triggers it. Since deleteTask calls domain logic inside dispatchAction, we should wrap the whole operation.
             }
         } else if (e.key === 'r') {
@@ -872,9 +879,10 @@ async function bootstrap() {
             e.preventDefault();
             const activeId = store.ui.getState().activeTaskId;
             if (activeId) {
+                const nextActiveId = getNextActiveTaskId(activeId);
                 await dispatchAction(async () => {
                     await tasksLogic.moveTaskToNextWorkDay(activeId, store);
-                    store.ui.update({ activeTaskId: null });
+                    store.ui.update({ activeTaskId: nextActiveId });
                 });
             }
         } else if (e.key === 'i') {
