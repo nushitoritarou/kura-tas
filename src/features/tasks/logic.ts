@@ -202,3 +202,17 @@ export function getPrevTaskId(tasks: { id: string }[], currentId: string | null)
     return tasks[index - 1].id;
 }
 
+/** タスク削除/移動後にフォーカスすべき次のタスクIDを取得する */
+export function getTaskIdAfterRemoval(tasks: { id: string }[], currentId: string): string | null {
+    if (tasks.length <= 1) return null;
+    const index = tasks.findIndex(t => t.id === currentId);
+    if (index === -1) return null;
+    // 削除対象が最後のタスクではない場合は、次のタスクを選択
+    if (index < tasks.length - 1) {
+        return tasks[index + 1].id;
+    }
+    // 削除対象が最後のタスクの場合は、前のタスクを選択
+    return tasks[index - 1].id;
+}
+
+

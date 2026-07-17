@@ -256,5 +256,34 @@ describe('tasks logic', () => {
             expect(logic.getPrevTaskId(mockTasks, 'task-1')).toBe('task-1');
         });
     });
+
+    describe('getTaskIdAfterRemoval', () => {
+        const mockTasks = [
+            { id: 'task-1' },
+            { id: 'task-2' },
+            { id: 'task-3' }
+        ];
+
+        it('空リストの場合はnullを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval([], 'task-1')).toBeNull();
+        });
+
+        it('タスクリストに対象が存在しない場合はnullを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval(mockTasks, 'unknown')).toBeNull();
+        });
+
+        it('タスクが1つだけの場合はnullを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval([{ id: 'task-1' }], 'task-1')).toBeNull();
+        });
+
+        it('中間タスク削除時に次のタスクIDを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval(mockTasks, 'task-1')).toBe('task-2');
+            expect(logic.getTaskIdAfterRemoval(mockTasks, 'task-2')).toBe('task-3');
+        });
+
+        it('最後のタスク削除時に前のタスクIDを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval(mockTasks, 'task-3')).toBe('task-2');
+        });
+    });
 });
 
