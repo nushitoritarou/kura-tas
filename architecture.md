@@ -45,6 +45,8 @@ Kura-Tas は、ブラウザの FileSystem Access API を活用した、サーバ
 - **Tier 3: 背景・詳細 (Backgrounds)**
   - **[構造とデータフロー](docs/arch/layers.md)**: ディレクトリ構成、各モジュールの役割、主要パターン。
   - **[テスト戦略](docs/arch/testing.md)**: テストの配置、分類、モックの境界。
+- **ADR (設計決定記録)**
+  - 設計判断の背景と決定事項は [docs/adr/](docs/adr/) に格納されています（例: [ADR-0001: ストレージ永続化戦略](docs/adr/0001-storage-strategy-local-only.md)）。
 
 ---
 
