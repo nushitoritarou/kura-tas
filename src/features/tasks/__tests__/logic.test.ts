@@ -25,13 +25,14 @@ describe('tasks logic', () => {
         expect(tasksStore.getTasksFor).toHaveBeenCalledWith('2024-06-01');
     });
 
-    it('addTask がタスクを追加すること', async () => {
-        await logic.addTask('new task', '2024-06-01', deps);
-        expect(tasksStore.add).toHaveBeenCalledWith(expect.objectContaining({
+    it('addTask がタスクを追加し、作成されたタスクを返すこと', async () => {
+        const task = await logic.addTask('new task', '2024-06-01', deps);
+        expect(task).toEqual(expect.objectContaining({
             text: 'new task',
             originalDate: "2024-06-01", date: '2024-06-01',
             done: false
         }));
+        expect(tasksStore.add).toHaveBeenCalledWith(task);
     });
 
     it('addTask が内容空の場合にエラーを投げること', async () => {

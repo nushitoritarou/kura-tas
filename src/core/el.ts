@@ -106,6 +106,12 @@ export const el = {
     shortcuts: {
       root: document.getElementById('modal-shortcuts') as HTMLElement,
       btnClose: document.getElementById('btn-close-shortcuts') as HTMLElement,
+    },
+    quickAdd: {
+      root: document.getElementById('modal-quick-add') as HTMLElement,
+      input: document.getElementById('quick-add-input') as HTMLInputElement,
+      btnSubmit: document.getElementById('btn-do-quick-add') as HTMLElement,
+      btnClose: document.getElementById('btn-close-quick-add') as HTMLElement,
     }
   }
 };

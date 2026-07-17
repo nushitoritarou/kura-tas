@@ -704,6 +704,11 @@ async function bootstrap() {
                 el.modals.import.root.style.display = 'none';
                 e.preventDefault();
             }
+            // クイックタスク追加モーダルが開いていたら閉じる
+            if (el.modals.quickAdd.root.style.display === 'flex') {
+                el.modals.quickAdd.root.style.display = 'none';
+                e.preventDefault();
+            }
             return;
         }
 
@@ -895,6 +900,22 @@ async function bootstrap() {
             // ショートカットモーダルの表示状態をトグル
             const isShown = globalRenderer.isShortcutsModalShown();
             globalRenderer.toggleShortcutsModal(!isShown);
+        } else if (e.key === 'o') {
+            e.preventDefault();
+            // 他のモーダルが開いている場合は発火しない
+            const isAnyModalOpen = 
+                globalRenderer.isShortcutsModalShown() ||
+                el.modals.routine.root.style.display === 'flex' ||
+                el.modals.holidays.root.style.display === 'flex' ||
+                el.modals.import.root.style.display === 'flex';
+                
+            if (!isAnyModalOpen) {
+                el.modals.quickAdd.root.style.display = 'flex';
+                el.modals.quickAdd.input.value = '';
+                setTimeout(() => {
+                    el.modals.quickAdd.input.focus();
+                }, 50);
+            }
         } else if (e.key === 'u') {
             e.preventDefault();
             await store.undo();
@@ -917,6 +938,33 @@ async function bootstrap() {
 
     el.modals.shortcuts.btnClose.onclick = () => {
         globalRenderer.toggleShortcutsModal(false);
+    };
+
+    el.modals.quickAdd.btnClose.onclick = () => {
+        el.modals.quickAdd.root.style.display = 'none';
+    };
+
+    const handleDoQuickAdd = async () => {
+        const text = el.modals.quickAdd.input.value.trim();
+        if (!text) {
+            globalRenderer.notifyError('内容を入力してください');
+            return;
+        }
+
+        const currentDate = store.ui.getState().currentDate;
+        await dispatchAction(async () => {
+            const newTask = await tasksLogic.addTask(text, currentDate, store);
+            store.ui.update({ activeTaskId: newTask.id });
+            el.modals.quickAdd.root.style.display = 'none';
+            el.modals.quickAdd.input.value = '';
+        });
+    };
+
+    el.modals.quickAdd.btnSubmit.onclick = handleDoQuickAdd;
+    el.modals.quickAdd.input.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            handleDoQuickAdd();
+        }
     };
 
     el.nav.btnShortcuts.onclick = () => {
@@ -1020,7 +1068,7 @@ async function bootstrap() {
         }
     };
 
-    [el.modals.import.root, el.modals.routine.root, el.modals.holidays.root].forEach(m => {
+    [el.modals.import.root, el.modals.routine.root, el.modals.holidays.root, el.modals.quickAdd.root].forEach(m => {
         m.onclick = (e) => {
             if (e.target === m) m.style.display = 'none';
         };
