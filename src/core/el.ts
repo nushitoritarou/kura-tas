@@ -67,10 +67,14 @@ export const el = {
   modals: {
     import: {
       root: document.getElementById('modal-import') as HTMLElement,
+      format: document.getElementById('import-format') as HTMLSelectElement,
       area: document.getElementById('import-area') as HTMLTextAreaElement,
       btnDoImport: document.getElementById('btn-do-import') as HTMLElement,
       btnCopySample: document.getElementById('btn-copy-sample') as HTMLElement,
       btnClose: document.getElementById('btn-close-import') as HTMLElement,
+      sampleContainer: document.getElementById('import-sample-container') as HTMLElement,
+      samplePre: document.getElementById('import-sample') as HTMLElement,
+      btnToggleSample: document.getElementById('btn-toggle-sample') as HTMLElement,
     },
     routine: {
       root: document.getElementById('modal-routine') as HTMLElement,

@@ -154,19 +154,56 @@ describe('tasks logic', () => {
     });
 
     describe('importTasks', () => {
-        it('配列からタスクをインポートすること', async () => {
+        it('json形式: 配列からタスクをインポートすること', async () => {
             const json = JSON.stringify([
                 'task1',
                 { text: 'task2', deadline: '2024-06-10', delegated: true }
             ]);
-            await logic.importTasks(json, '2024-06-01', deps);
+            await logic.importTasks(json, '2024-06-01', 'json', deps);
             expect(tasksStore.add).toHaveBeenCalledTimes(2);
             expect(tasksStore.add).toHaveBeenNthCalledWith(1, expect.objectContaining({ text: 'task1', originalDate: "2024-06-01", date: '2024-06-01' }));
             expect(tasksStore.add).toHaveBeenNthCalledWith(2, expect.objectContaining({ text: 'task2', deadline: '2024-06-10', delegated: true }));
         });
 
-        it('不正なJSONの場合にエラーを投げること', async () => {
-            await expect(logic.importTasks('invalid json', '2024-06-01', deps)).rejects.toThrow('Invalid JSON format');
+        it('json形式: 不正なJSONの場合にエラーを投げること', async () => {
+            await expect(logic.importTasks('invalid json', '2024-06-01', 'json', deps)).rejects.toThrow('Invalid JSON format');
+        });
+
+        it('json形式: 配列でないオブジェクトの場合にエラーを投げること', async () => {
+            await expect(logic.importTasks('{"key": "value"}', '2024-06-01', 'json', deps)).rejects.toThrow('JSON data must be an array');
+        });
+
+        it('text形式: 改行区切りテキストからタスクをインポートし、空行を無視すること', async () => {
+            const text = "line1\n  \n\r\nline2\nline3";
+            await logic.importTasks(text, '2024-06-01', 'text', deps);
+            expect(tasksStore.add).toHaveBeenCalledTimes(3);
+            expect(tasksStore.add).toHaveBeenNthCalledWith(1, expect.objectContaining({ text: 'line1', originalDate: "2024-06-01", date: '2024-06-01' }));
+            expect(tasksStore.add).toHaveBeenNthCalledWith(2, expect.objectContaining({ text: 'line2', originalDate: "2024-06-01", date: '2024-06-01' }));
+            expect(tasksStore.add).toHaveBeenNthCalledWith(3, expect.objectContaining({ text: 'line3', originalDate: "2024-06-01", date: '2024-06-01' }));
+        });
+
+        it('auto形式: JSON配列の場合はJSONとしてインポートすること', async () => {
+            const json = JSON.stringify([
+                'task1',
+                { text: 'task2', deadline: '2024-06-10', delegated: true }
+            ]);
+            await logic.importTasks(json, '2024-06-01', 'auto', deps);
+            expect(tasksStore.add).toHaveBeenCalledTimes(2);
+            expect(tasksStore.add).toHaveBeenNthCalledWith(1, expect.objectContaining({ text: 'task1', originalDate: "2024-06-01", date: '2024-06-01' }));
+            expect(tasksStore.add).toHaveBeenNthCalledWith(2, expect.objectContaining({ text: 'task2', deadline: '2024-06-10', delegated: true }));
+        });
+
+        it('auto形式: JSON配列でない場合（パースエラー等）はテキストとしてインポートすること', async () => {
+            const text = "invalid json\nline2";
+            await logic.importTasks(text, '2024-06-01', 'auto', deps);
+            expect(tasksStore.add).toHaveBeenCalledTimes(2);
+            expect(tasksStore.add).toHaveBeenNthCalledWith(1, expect.objectContaining({ text: 'invalid json', originalDate: "2024-06-01", date: '2024-06-01' }));
+            expect(tasksStore.add).toHaveBeenNthCalledWith(2, expect.objectContaining({ text: 'line2', originalDate: "2024-06-01", date: '2024-06-01' }));
+        });
+
+        it('auto形式: [ で始まるが無効なJSONの場合は、テキストにフォールバックせずエラーを投げること', async () => {
+            const text = '[\n  {"text": "task1"}\n]\ninvalid-extra-text';
+            await expect(logic.importTasks(text, '2024-06-01', 'auto', deps)).rejects.toThrow('Invalid JSON format');
         });
     });
 
