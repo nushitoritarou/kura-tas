@@ -2,21 +2,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as logic from '../logic';
 import { TaskStore } from '@/core/store/TaskStore';
 import { InboxItemStore } from '@/core/store/InboxItemStore';
+import { NoteStore } from '@/core/store/NoteStore';
 import { Task } from '@/types';
 
 vi.mock('@/core/store/TaskStore');
 vi.mock('@/core/store/InboxItemStore');
+vi.mock('@/core/store/NoteStore');
 vi.mock('@/core/storage');
 
 describe('tasks logic', () => {
     let tasksStore: TaskStore;
     let inboxStore: InboxItemStore;
+    let noteStore: NoteStore;
     let deps: logic.TaskDeps;
 
     beforeEach(() => {
         tasksStore = new TaskStore() as any;
         inboxStore = new InboxItemStore() as any;
-        deps = { tasks: tasksStore, inboxItems: inboxStore };
+        noteStore = new NoteStore() as any;
+        deps = { tasks: tasksStore, inboxItems: inboxStore, notes: noteStore };
         vi.clearAllMocks();
     });
 
@@ -136,6 +140,7 @@ describe('tasks logic', () => {
             if (date === prevDate) return [oldTask];
             return [];
         });
+        vi.mocked(noteStore.getNote).mockResolvedValue({ id: 'task-old-1', title: 'task-old-1', body: '', date: prevDate, type: 'task' });
 
         const addedCount = await logic.carryOverTasks(targetDate, 1, deps);
         
@@ -144,7 +149,8 @@ describe('tasks logic', () => {
         expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({
             id: 'old-1',
             done: true,
-            text: 'incomplete (Carried Over)'
+            text: 'incomplete (Carried Over)',
+            noteId: undefined
         }));
         // 新しいタスクを追加
         expect(tasksStore.add).toHaveBeenCalledWith(expect.objectContaining({
@@ -152,6 +158,72 @@ describe('tasks logic', () => {
             originalDate: "2024-06-01", date: targetDate,
             done: false
         }));
+    });
+
+    it('carryOverTasks がノートのある未完了タスクを繰り越す際、ノートも移動すること', async () => {
+        const targetDate = '2024-06-03';
+        const prevDate = '2024-06-02';
+        
+        const oldTask: Task = { id: 'old-1', text: 'incomplete', originalDate: "2024-06-01", date: prevDate, done: false };
+        
+        vi.mocked(tasksStore.getTasksFor).mockImplementation(async (date) => {
+            if (date === targetDate) return [];
+            if (date === prevDate) return [oldTask];
+            return [];
+        });
+
+        // ノートが存在する状態をモック
+        vi.mocked(noteStore.getNote).mockResolvedValue({
+            id: 'task-old-1',
+            title: 'task-old-1',
+            body: 'note content',
+            date: prevDate,
+            type: 'task',
+            taskId: 'old-1'
+        });
+
+        let newTaskId = '';
+        vi.mocked(tasksStore.add).mockImplementation(async (task) => {
+            newTaskId = task.id;
+        });
+
+        const addedCount = await logic.carryOverTasks(targetDate, 1, deps);
+        
+        expect(addedCount).toBe(1);
+        expect(newTaskId).not.toBe('');
+        
+        // 元のタスクの更新
+        expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({
+            id: 'old-1',
+            done: true,
+            noteId: undefined
+        }));
+
+        // ノートの移動処理が呼ばれていること
+        expect(noteStore.moveNote).toHaveBeenCalledWith(
+            'task-old-1',
+            `task-${newTaskId}`,
+            { date: targetDate, taskId: newTaskId }
+        );
+    });
+
+    describe('preloadCarryOverNotes', () => {
+        it('未完了タスクのノートを正しくロード（getNote）すること', async () => {
+            const targetDate = '2024-06-03';
+            const prevDate = '2024-06-02';
+            
+            const oldTask: Task = { id: 'old-1', text: 'incomplete', originalDate: "2024-06-01", date: prevDate, done: false };
+            
+            vi.mocked(tasksStore.getTasksFor).mockImplementation(async (date) => {
+                if (date === targetDate) return [];
+                if (date === prevDate) return [oldTask];
+                return [];
+            });
+
+            await logic.preloadCarryOverNotes(targetDate, 1, deps);
+            
+            expect(noteStore.getNote).toHaveBeenCalledWith('task-old-1', { date: prevDate, taskId: 'old-1' });
+        });
     });
 
     describe('importTasks', () => {

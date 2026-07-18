@@ -1,5 +1,6 @@
 import { TaskStore } from '@/core/store/TaskStore';
 import { InboxItemStore } from '@/core/store/InboxItemStore';
+import { NoteStore } from '@/core/store/NoteStore';
 import { Task } from '@/types';
 import * as factories from "@/core/engine/factories";
 import * as converters from "@/core/engine/converters";
@@ -9,6 +10,7 @@ import * as tasksEngine from "@/core/engine/tasks";
 export interface TaskDeps {
     tasks: TaskStore;
     inboxItems: InboxItemStore;
+    notes: NoteStore;
 }
 
 /** 指定日のタスクをロード */
@@ -73,6 +75,22 @@ export async function returnToInbox(taskId: string, deps: TaskDeps): Promise<voi
     await deps.tasks.remove(taskId);
 }
 
+/** 繰り越し処理前に、移動対象のノートをあらかじめロードしてキャッシュに載せる (副作用のないリード処理) */
+export async function preloadCarryOverNotes(targetDate: string, days: number, deps: TaskDeps): Promise<void> {
+    for (let i = 1; i <= days; i++) {
+        const prevDate = datetime.addDays(targetDate, -i);
+        const oldTasks = await deps.tasks.getTasksFor(prevDate);
+        const incomplete = oldTasks.filter(t => !t.done);
+        
+        for (const t of incomplete) {
+            const oldNoteId = t.noteId || factories.getNoteId('task', t.id);
+            // トランザクション前に getNote することで、キャッシュ（state.notes）に載せ、
+            // トランザクション開始時のスナップショットに古いノートの内容が含まれるようにする。
+            await deps.notes.getNote(oldNoteId, { date: prevDate, taskId: t.id });
+        }
+    }
+}
+
 /** 未完了タスクの繰り越し */
 export async function carryOverTasks(targetDate: string, days: number, deps: TaskDeps): Promise<number> {
     let tasksAddedCount = 0;
@@ -89,10 +107,12 @@ export async function carryOverTasks(targetDate: string, days: number, deps: Tas
                 const uniqueName = tasksEngine.generateUniqueTaskName(t.text, prevDate, existingNames);
                 
                 // 元のファイルを更新 (完了扱いにする)
+                // 紐づくnoteは引き継がれるため、元のタスク側のnoteIdは削除する
                 await deps.tasks.update({ 
                     ...t, 
                     done: true, 
-                    text: `${t.text} (Carried Over)` 
+                    text: `${t.text} (Carried Over)`,
+                    noteId: undefined
                 });
 
                 // 新しいタスクを追加
@@ -102,6 +122,15 @@ export async function carryOverTasks(targetDate: string, days: number, deps: Tas
                 newTask.delegated = t.delegated;
                 
                 await deps.tasks.add(newTask);
+
+                // ノートの移動処理
+                const oldNoteId = t.noteId || factories.getNoteId('task', t.id);
+                const oldNote = await deps.notes.getNote(oldNoteId, { date: prevDate, taskId: t.id });
+                if (oldNote && oldNote.body.trim() !== '') {
+                    const newNoteId = factories.getNoteId('task', newTask.id);
+                    await deps.notes.moveNote(oldNoteId, newNoteId, { date: targetDate, taskId: newTask.id });
+                }
+
                 existingNames.push(uniqueName);
                 tasksAddedCount++;
             }
