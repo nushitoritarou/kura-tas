@@ -7,6 +7,7 @@ import * as globalRenderer from '@/features/global/renderer';
 import { WiringContext } from './context';
 
 export function wireTasks(ctx: WiringContext): void {
+    let isProcessing = false;
     // 5. Tasks関連
     el.tasks.list.onclick = async (e) => {
         const target = e.target as HTMLElement;
@@ -122,8 +123,10 @@ export function wireTasks(ctx: WiringContext): void {
     const btnCarryOver = el.tasks.btnCarryOver;
     if (btnCarryOver) {
         btnCarryOver.onclick = async () => {
+            if (isProcessing) return;
             const uiState = ctx.store.ui.getState();
             const config = ctx.store.config.getState();
+            isProcessing = true;
             try {
                 // 1. トランザクションの外側であらかじめ対象のノートをキャッシュに載せる
                 await tasksLogic.preloadCarryOverNotes(uiState.currentDate, config.carryOverDays ?? 10, ctx.store);
@@ -134,6 +137,8 @@ export function wireTasks(ctx: WiringContext): void {
                 });
             } catch (e: any) {
                 globalRenderer.notifyError(e.message || '繰り越し処理に失敗しました');
+            } finally {
+                isProcessing = false;
             }
         };
     }
@@ -170,14 +175,20 @@ export function wireTasks(ctx: WiringContext): void {
     };
 
     el.modals.import.btnDoImport.onclick = async () => {
+        if (isProcessing) return;
         const jsonText = el.modals.import.area.value;
         const format = el.modals.import.format.value as 'auto' | 'json' | 'text';
         const targetDate = ctx.store.ui.getState().currentDate;
-        await ctx.dispatchAction(async () => {
-            await tasksLogic.importTasks(jsonText, targetDate, format, ctx.store);
-            el.modals.import.area.value = '';
-            el.modals.import.root.style.display = 'none';
-        });
+        isProcessing = true;
+        try {
+            await ctx.dispatchAction(async () => {
+                await tasksLogic.importTasks(jsonText, targetDate, format, ctx.store);
+                el.modals.import.area.value = '';
+                el.modals.import.root.style.display = 'none';
+            });
+        } finally {
+            isProcessing = false;
+        }
     };
 
     el.modals.import.btnCopySample.onclick = () => {
@@ -195,6 +206,7 @@ export function wireTasks(ctx: WiringContext): void {
     };
 
     const handleDoQuickAdd = async () => {
+        if (isProcessing) return;
         const text = el.modals.quickAdd.input.value.trim();
         if (!text) {
             globalRenderer.notifyError('内容を入力してください');
@@ -202,12 +214,17 @@ export function wireTasks(ctx: WiringContext): void {
         }
 
         const currentDate = ctx.store.ui.getState().currentDate;
-        await ctx.dispatchAction(async () => {
-            const newTask = await tasksLogic.addTask(text, currentDate, ctx.store);
-            ctx.store.ui.update({ activeTaskId: newTask.id });
-            el.modals.quickAdd.root.style.display = 'none';
-            el.modals.quickAdd.input.value = '';
-        });
+        isProcessing = true;
+        try {
+            await ctx.dispatchAction(async () => {
+                const newTask = await tasksLogic.addTask(text, currentDate, ctx.store);
+                ctx.store.ui.update({ activeTaskId: newTask.id });
+                el.modals.quickAdd.root.style.display = 'none';
+                el.modals.quickAdd.input.value = '';
+            });
+        } finally {
+            isProcessing = false;
+        }
     };
 
     el.modals.quickAdd.btnSubmit.onclick = handleDoQuickAdd;

@@ -6,6 +6,7 @@ import { DAYS_MAP, RoutineTask } from '@/types';
 import { WiringContext } from './context';
 
 export function wireRoutine(ctx: WiringContext): void {
+    let isProcessing = false;
     const navRoutine = el.nav.btnRoutine;
     if (navRoutine) {
         navRoutine.onclick = async () => {
@@ -23,6 +24,7 @@ export function wireRoutine(ctx: WiringContext): void {
     };
 
     el.modals.routine.btnSubmit.onclick = async () => {
+        if (isProcessing) return;
         const text = el.modals.routine.input.value.trim();
         const type = el.modals.routine.scheduleType.value as 'weekly' | 'interval' | 'monthly-day' | 'monthly-weekday' | 'none';
         const holiday_adjustment = el.modals.routine.holidayAdjustment.value as 'before' | 'after' | 'skip';
@@ -52,13 +54,20 @@ export function wireRoutine(ctx: WiringContext): void {
 
         const id = el.modals.routine.btnSubmit.dataset.id;
         const noteTemplate = el.modals.routine.btnSubmit.dataset.noteTemplate;
-        await ctx.dispatchAction(async () => {
-            await routineLogic.upsertMaster({ id, text, schedule, holiday_adjustment, noteTemplate }, { routine: ctx.store.routine, tasks: ctx.store.tasks, ui: ctx.store.ui, config: ctx.store.config, notes: ctx.store.notes });
-            routineRenderer.setupRoutineForm(false);
-        });
+        
+        isProcessing = true;
+        try {
+            await ctx.dispatchAction(async () => {
+                await routineLogic.upsertMaster({ id, text, schedule, holiday_adjustment, noteTemplate }, { routine: ctx.store.routine, tasks: ctx.store.tasks, ui: ctx.store.ui, config: ctx.store.config, notes: ctx.store.notes });
+                routineRenderer.setupRoutineForm(false);
+            });
+        } finally {
+            isProcessing = false;
+        }
     };
 
     el.modals.routine.list.onclick = async (e) => {
+        if (isProcessing) return;
         const target = e.target as HTMLElement;
         const id = target.dataset.id;
         if (!id) return;
@@ -71,16 +80,26 @@ export function wireRoutine(ctx: WiringContext): void {
             }
         } else if (target.classList.contains('btn-delete-routine')) {
             if (globalRenderer.confirmAction('削除しますか？')) {
-                await ctx.dispatchAction(async () => {
-                    await routineLogic.deleteMaster(id, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config });
-                    routineRenderer.setupRoutineForm(false);
-                });
+                isProcessing = true;
+                try {
+                    await ctx.dispatchAction(async () => {
+                        await routineLogic.deleteMaster(id, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config });
+                        routineRenderer.setupRoutineForm(false);
+                    });
+                } finally {
+                    isProcessing = false;
+                }
             }
         } else if (target.classList.contains('btn-add-task-from-routine')) {
-            await ctx.dispatchAction(async () => {
-                const currentDate = ctx.store.ui.getState().currentDate;
-                await routineLogic.createTaskFromRoutine(id, currentDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, notes: ctx.store.notes });
-            });
+            isProcessing = true;
+            try {
+                await ctx.dispatchAction(async () => {
+                    const currentDate = ctx.store.ui.getState().currentDate;
+                    await routineLogic.createTaskFromRoutine(id, currentDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, notes: ctx.store.notes });
+                });
+            } finally {
+                isProcessing = false;
+            }
         }
     };
 
