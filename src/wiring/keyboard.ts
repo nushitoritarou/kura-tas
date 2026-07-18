@@ -183,7 +183,7 @@ export function wireKeyboard(ctx: WiringContext): void {
                 await routineLogic.generateTasksFromRoutine(nextDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config, notes: ctx.store.notes });
             }, { recordHistory: false });
             ctx.store.resetHistory();
-        } else if (e.key === 'Home') {
+        } else if (e.key === 'Home' || e.key === '0' || e.key === '^') {
             e.preventDefault();
             await ctx.dispatchAction(async () => {
                 const nextDate = await globalLogic.jumpToToday(ctx.store);
@@ -216,7 +216,7 @@ export function wireKeyboard(ctx: WiringContext): void {
                     ctx.store.ui.update({ activeTaskId: nextActiveId });
                 }, { recordHistory: false });
             }
-        } else if (e.key === 'r') {
+        } else if (e.key === 'a' || e.key === 'A') {
             e.preventDefault();
             const activeId = ctx.store.ui.getState().activeTaskId;
             if (activeId) {
