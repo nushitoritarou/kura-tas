@@ -82,8 +82,7 @@ module.exports = {
       comment: 'Shared UI Util はプロジェクト内のどのファイル（types を含む）にも依存してはなりません。',
       from: { path: '^src/shared/utils/ui/' },
       to: {
-        path: '^src/',
-        pathNot: ['^src/shared/utils/ui/']
+        path: '^src/'
       }
     },
     {
@@ -107,7 +106,7 @@ module.exports = {
       from: { path: '^src/shared/utils/dom/' },
       to: {
         path: '^src/',
-        pathNot: ['^src/shared/utils/dom/']
+        pathNot: ['^src/types\\.ts$', '^src/shared/utils/dom/']
       }
     },
     {
