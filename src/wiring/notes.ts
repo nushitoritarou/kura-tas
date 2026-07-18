@@ -6,12 +6,20 @@ import * as globalRenderer from '@/features/global/renderer';
 import { WiringContext } from './context';
 
 export async function handleSaveNote(ctx: WiringContext): Promise<void> {
-    await ctx.dispatchAction(async () => {
+    try {
         const note = await notesLogic.getActiveNote({ notes: ctx.store.notes, ui: ctx.store.ui, tasks: ctx.store.tasks });
-        note.body = el.notes.editor.value;
-        await notesLogic.saveNote(note, { notes: ctx.store.notes });
-        notesRenderer.showSaveStatus('Saved');
-    });
+        if (note.body === el.notes.editor.value) {
+            return;
+        }
+        await ctx.dispatchAction(async () => {
+            const activeNote = await notesLogic.getActiveNote({ notes: ctx.store.notes, ui: ctx.store.ui, tasks: ctx.store.tasks });
+            activeNote.body = el.notes.editor.value;
+            await notesLogic.saveNote(activeNote, { notes: ctx.store.notes });
+            notesRenderer.showSaveStatus('Saved');
+        });
+    } catch (e: any) {
+        globalRenderer.notifyError(e.message || 'ノートの保存中にエラーが発生しました');
+    }
 }
 
 export function wireNotes(ctx: WiringContext): void {
@@ -19,15 +27,16 @@ export function wireNotes(ctx: WiringContext): void {
         await handleSaveNote(ctx);
     };
 
+    el.notes.editor.onblur = async () => {
+        await handleSaveNote(ctx);
+    };
+
     el.notes.btnToggleView.onclick = async () => {
+        const uiState = ctx.store.ui.getState();
+        if (uiState.isEditMode) {
+            await handleSaveNote(ctx);
+        }
         await ctx.dispatchAction(async () => {
-            const uiState = ctx.store.ui.getState();
-            if (uiState.isEditMode) {
-                const note = await notesLogic.getActiveNote({ notes: ctx.store.notes, ui: ctx.store.ui, tasks: ctx.store.tasks });
-                note.body = el.notes.editor.value;
-                await notesLogic.saveNote(note, { notes: ctx.store.notes });
-                notesRenderer.showSaveStatus('Saved');
-            }
             ctx.store.ui.update({ isEditMode: !uiState.isEditMode });
         });
     };

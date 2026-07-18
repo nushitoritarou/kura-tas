@@ -6,7 +6,9 @@ import { el } from '@/core/el';
 export function renderNoteArea(note: Note, isEditMode: boolean, taskText?: string, routineId?: string): void {
     const { editor, preview, panelTitle, btnToggleView, btnPromote } = el.notes;
 
-    editor.value = note.body;
+    if (editor.value !== note.body) {
+        editor.value = note.body;
+    }
     preview.innerHTML = parseToHtml(note.body);
     
     const displayTitle = getDisplayTitle(note.type, taskText, note.date);
