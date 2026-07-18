@@ -177,7 +177,6 @@ async function bootstrap() {
             const nextDate = await globalLogic.shiftCurrentDate(-1, store);
             await periodicLogic.generateTasksFromPeriodic(nextDate, { periodic: store.periodic, tasks: store.tasks });
         }, { recordHistory: false });
-        store.resetHistory();
     };
 
     el.nav.btnNextDay.onclick = async () => {
@@ -185,7 +184,6 @@ async function bootstrap() {
             const nextDate = await globalLogic.shiftCurrentDate(1, store);
             await periodicLogic.generateTasksFromPeriodic(nextDate, { periodic: store.periodic, tasks: store.tasks });
         }, { recordHistory: false });
-        store.resetHistory();
     };
 
     el.nav.btnToday.onclick = async () => {
@@ -193,7 +191,6 @@ async function bootstrap() {
             const nextDate = await globalLogic.jumpToToday(store);
             await periodicLogic.generateTasksFromPeriodic(nextDate, { periodic: store.periodic, tasks: store.tasks });
         }, { recordHistory: false });
-        store.resetHistory();
     };
 
     el.nav.btnUndo.onclick = async () => {
@@ -575,34 +572,24 @@ async function bootstrap() {
     // 画面がアクティブになった時
     document.addEventListener('visibilitychange', async () => {
         if (document.visibilityState === 'visible' && store.ui.getState().isAppReady) {
-            let updated = false;
             await dispatchAction(async () => {
                 const updatedDate = await globalLogic.checkAndApplyDayChange(store);
                 if (updatedDate) {
                     await periodicLogic.generateTasksFromPeriodic(updatedDate, { periodic: store.periodic, tasks: store.tasks });
-                    updated = true;
                 }
             }, { recordHistory: false });
-            if (updated) {
-                store.resetHistory();
-            }
         }
     });
 
     // 定期チェック (1分間隔)
     setInterval(async () => {
         if (store.ui.getState().isAppReady) {
-            let updated = false;
             await dispatchAction(async () => {
                 const updatedDate = await globalLogic.checkAndApplyDayChange(store);
                 if (updatedDate) {
                     await periodicLogic.generateTasksFromPeriodic(updatedDate, { periodic: store.periodic, tasks: store.tasks });
-                    updated = true;
                 }
             }, { recordHistory: false });
-            if (updated) {
-                store.resetHistory();
-            }
         }
     }, 60 * 1000);
 }

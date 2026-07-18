@@ -63,3 +63,4 @@ npm run build
 このプロジェクトは **MIT License** のもとで公開されています。詳細は [LICENSE](./LICENSE) ファイルを参照してください。
 
 Copyright (c) 2026 nushitoritarou
+
