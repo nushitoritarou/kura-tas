@@ -122,11 +122,19 @@ export function wireTasks(ctx: WiringContext): void {
     const btnCarryOver = document.getElementById('btn-carry-over');
     if (btnCarryOver) {
         btnCarryOver.onclick = async () => {
-            await ctx.dispatchAction(async () => {
-                const uiState = ctx.store.ui.getState();
-                const config = ctx.store.config.getState();
-                await tasksLogic.carryOverTasks(uiState.currentDate, config.carryOverDays ?? 10, ctx.store);
-            });
+            const uiState = ctx.store.ui.getState();
+            const config = ctx.store.config.getState();
+            try {
+                // 1. トランザクションの外側であらかじめ対象のノートをキャッシュに載せる
+                await tasksLogic.preloadCarryOverNotes(uiState.currentDate, config.carryOverDays ?? 10, ctx.store);
+                
+                // 2. トランザクション内で繰り越し処理を実行
+                await ctx.dispatchAction(async () => {
+                    await tasksLogic.carryOverTasks(uiState.currentDate, config.carryOverDays ?? 10, ctx.store);
+                });
+            } catch (e: any) {
+                globalRenderer.notifyError(e.message || '繰り越し処理に失敗しました');
+            }
         };
     }
 

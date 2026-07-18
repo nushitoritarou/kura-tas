@@ -152,6 +152,61 @@ export class NoteStore extends DirectoryStore<NoteStoreState> {
         });
     }
 
+    /** Note を別のIDへ移動/リネームする。ファイルシステム上のリネームとメモリ上のキャッシュの更新。 */
+    async moveNote(oldId: string, newId: string, context: { date: string; taskId?: string }): Promise<void> {
+        await this.enqueue(async (currentState) => {
+            // 1. 古いノートのファイル読み込み
+            const content = await storage.readText(`${this.dirName}/${oldId}.md`);
+            if (content !== null) {
+                // パースして、メタデータを新しい情報（date, taskId など）で更新
+                const { meta, body } = NoteStore.parseNoteFile(content);
+                const updatedNote: Note = {
+                    id: newId,
+                    title: meta.title || newId,
+                    body,
+                    date: context.date,
+                    type: context.taskId ? 'task' : 'daily',
+                    taskId: context.taskId
+                };
+                
+                // 新しいIDで保存
+                const newContent = NoteStore.buildFileContent(updatedNote);
+                await storage.writeText(`${this.dirName}/${newId}.md`, newContent);
+                
+                // 古いファイルを削除
+                await storage.deleteFile(`${this.dirName}/${oldId}.md`);
+                
+                // メモリ上のキャッシュ (notes) 更新
+                const nextNotes = { ...currentState.notes };
+                delete nextNotes[oldId];
+                nextNotes[newId] = updatedNote;
+                
+                // メモリ上の metadata 更新
+                const now = new Date().toISOString();
+                let nextMetadata = currentState.metadata.filter(m => m.id !== oldId);
+                const existingMetaIndex = nextMetadata.findIndex(m => m.id === newId);
+                if (existingMetaIndex === -1) {
+                    nextMetadata.push({ id: newId, title: updatedNote.title, updatedAt: now });
+                } else {
+                    nextMetadata = nextMetadata.map(m =>
+                        m.id === newId ? { ...m, updatedAt: now, title: updatedNote.title } : m
+                    );
+                }
+                
+                return {
+                    nextState: {
+                        metadata: nextMetadata,
+                        notes: nextNotes
+                    },
+                    result: undefined
+                };
+            }
+            
+            // ファイルが存在しない場合は何もしない
+            return { nextState: currentState, result: undefined };
+        });
+    }
+
     async restoreSnapshot(snapshot: NoteStoreState): Promise<void> {
         await this.enqueue(async (currentState) => {
             const currentIds = currentState.metadata.map(m => m.id);
