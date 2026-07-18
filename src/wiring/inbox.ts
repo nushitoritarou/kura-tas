@@ -6,6 +6,7 @@ import { WiringContext } from './context';
 
 export function wireInbox(ctx: WiringContext): void {
     let isAdding = false;
+    let isProcessing = false;
     const handleAddInbox = async () => {
         if (isAdding) return;
         const text = el.inbox.input.value.trim();
@@ -28,14 +29,20 @@ export function wireInbox(ctx: WiringContext): void {
     el.inbox.input.onblur = handleAddInbox;
 
     el.inbox.list.onclick = async (e) => {
+        if (isProcessing) return;
         const itemEl = (e.target as HTMLElement).closest('.inbox-item') as HTMLElement;
         if (!itemEl) return;
 
         const id = itemEl.dataset.id;
         if (id) {
-            await ctx.dispatchAction(async () => {
-                await inboxLogic.sendToTask(id, ctx.store.ui.getState().currentDate, ctx.store);
-            });
+            isProcessing = true;
+            try {
+                await ctx.dispatchAction(async () => {
+                    await inboxLogic.sendToTask(id, ctx.store.ui.getState().currentDate, ctx.store);
+                });
+            } finally {
+                isProcessing = false;
+            }
         }
     };
 

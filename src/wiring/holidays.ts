@@ -6,6 +6,7 @@ import * as globalRenderer from '@/features/global/renderer';
 import { WiringContext } from './context';
 
 export function wireHolidays(ctx: WiringContext): void {
+    let isProcessing = false;
     if (el.nav.btnHolidays) {
         el.nav.btnHolidays.onclick = () => {
             const config = ctx.store.config.getState();
@@ -23,6 +24,7 @@ export function wireHolidays(ctx: WiringContext): void {
     const workdayContainer = document.getElementById('holiday-workdays-container');
     if (workdayContainer) {
         workdayContainer.onchange = async () => {
+            if (isProcessing) return;
             const workdayCheckboxes = Array.from(el.modals.holidays.workdayCheckboxes);
             const workDays = workdayCheckboxes
                 .filter(cb => cb.checked)
@@ -31,21 +33,27 @@ export function wireHolidays(ctx: WiringContext): void {
             const config = ctx.store.config.getState();
             const holidays = config.holidays || [];
 
-            await ctx.dispatchAction(async () => {
-                await holidaysLogic.saveHolidays(workDays, holidays, {
-                    config: ctx.store.config
+            isProcessing = true;
+            try {
+                await ctx.dispatchAction(async () => {
+                    await holidaysLogic.saveHolidays(workDays, holidays, {
+                        config: ctx.store.config
+                    });
+                    await routineLogic.generateTasksFromRoutine(ctx.store.ui.getState().currentDate, {
+                        routine: ctx.store.routine,
+                        tasks: ctx.store.tasks,
+                        config: ctx.store.config,
+                        notes: ctx.store.notes
+                    });
                 });
-                await routineLogic.generateTasksFromRoutine(ctx.store.ui.getState().currentDate, {
-                    routine: ctx.store.routine,
-                    tasks: ctx.store.tasks,
-                    config: ctx.store.config,
-                    notes: ctx.store.notes
-                });
-            });
+            } finally {
+                isProcessing = false;
+            }
         };
     }
 
     el.modals.holidays.btnAddDate.onclick = async () => {
+        if (isProcessing) return;
         const dateVal = el.modals.holidays.dateInput.value;
         if (!dateVal) return;
 
@@ -61,21 +69,27 @@ export function wireHolidays(ctx: WiringContext): void {
 
         const nextHolidays = [...holidays, dateVal];
 
-        await ctx.dispatchAction(async () => {
-            await holidaysLogic.saveHolidays(workDays, nextHolidays, {
-                config: ctx.store.config
+        isProcessing = true;
+        try {
+            await ctx.dispatchAction(async () => {
+                await holidaysLogic.saveHolidays(workDays, nextHolidays, {
+                    config: ctx.store.config
+                });
+                await routineLogic.generateTasksFromRoutine(ctx.store.ui.getState().currentDate, {
+                    routine: ctx.store.routine,
+                    tasks: ctx.store.tasks,
+                    config: ctx.store.config,
+                    notes: ctx.store.notes
+                });
+                holidaysRenderer.renderHolidayList(nextHolidays);
             });
-            await routineLogic.generateTasksFromRoutine(ctx.store.ui.getState().currentDate, {
-                routine: ctx.store.routine,
-                tasks: ctx.store.tasks,
-                config: ctx.store.config,
-                notes: ctx.store.notes
-            });
-            holidaysRenderer.renderHolidayList(nextHolidays);
-        });
+        } finally {
+            isProcessing = false;
+        }
     };
 
     el.modals.holidays.dateList.onclick = async (e) => {
+        if (isProcessing) return;
         const target = e.target as HTMLElement;
         if (target.classList.contains('btn-delete-holiday')) {
             const dateToDelete = target.dataset.date;
@@ -86,18 +100,23 @@ export function wireHolidays(ctx: WiringContext): void {
 
                 const nextHolidays = holidays.filter(h => h !== dateToDelete);
 
-                await ctx.dispatchAction(async () => {
-                    await holidaysLogic.saveHolidays(workDays, nextHolidays, {
-                        config: ctx.store.config
+                isProcessing = true;
+                try {
+                    await ctx.dispatchAction(async () => {
+                        await holidaysLogic.saveHolidays(workDays, nextHolidays, {
+                            config: ctx.store.config
+                        });
+                        await routineLogic.generateTasksFromRoutine(ctx.store.ui.getState().currentDate, {
+                            routine: ctx.store.routine,
+                            tasks: ctx.store.tasks,
+                            config: ctx.store.config,
+                            notes: ctx.store.notes
+                        });
+                        holidaysRenderer.renderHolidayList(nextHolidays);
                     });
-                    await routineLogic.generateTasksFromRoutine(ctx.store.ui.getState().currentDate, {
-                        routine: ctx.store.routine,
-                        tasks: ctx.store.tasks,
-                        config: ctx.store.config,
-                        notes: ctx.store.notes
-                    });
-                    holidaysRenderer.renderHolidayList(nextHolidays);
-                });
+                } finally {
+                    isProcessing = false;
+                }
             }
         }
     };
