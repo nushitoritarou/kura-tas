@@ -19,7 +19,7 @@ export function renderTaskList(tasks: Task[], activeTaskId?: string): void {
  * 繰り越しボタンの表示状態を更新する
  */
 export function updateCarryOverButtonVisibility(currentDate: string): void {
-    const btnCarryOver = document.getElementById('btn-carry-over');
+    const btnCarryOver = el.tasks.btnCarryOver;
     if (btnCarryOver) {
         btnCarryOver.style.display = currentDate === getTodayStr() ? 'inline-block' : 'none';
     }

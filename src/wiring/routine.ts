@@ -6,7 +6,7 @@ import { DAYS_MAP, RoutineTask } from '@/types';
 import { WiringContext } from './context';
 
 export function wireRoutine(ctx: WiringContext): void {
-    const navRoutine = document.getElementById('nav-routine');
+    const navRoutine = el.nav.btnRoutine;
     if (navRoutine) {
         navRoutine.onclick = async () => {
             const masters = await routineLogic.getMasters({ routine: ctx.store.routine });

@@ -28,6 +28,8 @@ export const el = {
     btnRedo: document.getElementById('btn-redo') as HTMLButtonElement,
     btnHolidays: document.getElementById('nav-holidays') as HTMLElement,
     btnShortcuts: document.getElementById('nav-shortcuts') as HTMLElement,
+    btnRoutine: document.getElementById('nav-routine') as HTMLElement,
+    btnImport: document.getElementById('nav-import') as HTMLElement,
   },
 
   // 共通UI
@@ -51,6 +53,7 @@ export const el = {
   // タスク
   tasks: {
     list: document.getElementById('task-list') as HTMLElement,
+    btnCarryOver: document.getElementById('btn-carry-over') as HTMLElement,
   },
 
   notes: {
@@ -98,6 +101,7 @@ export const el = {
     holidays: {
       root: document.getElementById('modal-holidays') as HTMLElement,
       workdayCheckboxes: document.querySelectorAll('.workday-checkbox') as NodeListOf<HTMLInputElement>,
+      workdayContainer: document.getElementById('holiday-workdays-container') as HTMLElement,
       dateInput: document.getElementById('holiday-date-input') as HTMLInputElement,
       btnAddDate: document.getElementById('btn-add-holiday-date') as HTMLElement,
       dateList: document.getElementById('holiday-list') as HTMLElement,
