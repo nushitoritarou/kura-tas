@@ -7,7 +7,7 @@ import { WiringContext } from './context';
 
 export function wireRoutine(ctx: WiringContext): void {
     let isProcessing = false;
-    const navRoutine = document.getElementById('nav-routine');
+    const navRoutine = el.nav.btnRoutine;
     if (navRoutine) {
         navRoutine.onclick = async () => {
             const masters = await routineLogic.getMasters({ routine: ctx.store.routine });

@@ -120,7 +120,7 @@ export function wireTasks(ctx: WiringContext): void {
     };
 
     // 繰り越し
-    const btnCarryOver = document.getElementById('btn-carry-over');
+    const btnCarryOver = el.tasks.btnCarryOver;
     if (btnCarryOver) {
         btnCarryOver.onclick = async () => {
             if (isProcessing) return;
@@ -153,7 +153,7 @@ export function wireTasks(ctx: WiringContext): void {
         }
     };
 
-    const btnNavImport = document.getElementById('nav-import');
+    const btnNavImport = el.nav.btnImport;
     if (btnNavImport) {
         btnNavImport.onclick = () => {
             el.modals.import.root.style.display = 'flex';

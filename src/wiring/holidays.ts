@@ -21,7 +21,7 @@ export function wireHolidays(ctx: WiringContext): void {
         holidaysRenderer.toggleHolidaysModal(false);
     };
 
-    const workdayContainer = document.getElementById('holiday-workdays-container');
+    const workdayContainer = el.modals.holidays.workdayContainer;
     if (workdayContainer) {
         workdayContainer.onchange = async () => {
             if (isProcessing) return;
