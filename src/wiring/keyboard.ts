@@ -25,6 +25,17 @@ export function wireKeyboard(ctx: WiringContext): void {
         return true;
     };
 
+    const isAnyModalOpen = (): boolean => {
+        return (
+            (el.setup.overlay && el.setup.overlay.style.display !== 'none') ||
+            el.modals.shortcuts.root.style.display === 'flex' ||
+            el.modals.routine.root.style.display === 'flex' ||
+            el.modals.holidays.root.style.display === 'flex' ||
+            el.modals.import.root.style.display === 'flex' ||
+            el.modals.quickAdd.root.style.display === 'flex'
+        );
+    };
+
     const getNextActiveTaskId = (activeId: string): string | null => {
         const currentDate = ctx.store.ui.getState().currentDate;
         const dayTasks = ctx.store.tasks.getState().filter(t => t.date === currentDate);
@@ -65,6 +76,11 @@ export function wireKeyboard(ctx: WiringContext): void {
                 el.modals.quickAdd.root.style.display = 'none';
                 e.preventDefault();
             }
+            return;
+        }
+
+        // 各種モーダルが開いている場合は、Escape 以外のキー入力を無効化する
+        if (isAnyModalOpen()) {
             return;
         }
 
@@ -260,20 +276,11 @@ export function wireKeyboard(ctx: WiringContext): void {
             globalRenderer.toggleShortcutsModal(!isShown);
         } else if (e.key === 'o') {
             e.preventDefault();
-            // 他のモーダルが開いている場合は発火しない
-            const isAnyModalOpen = 
-                globalRenderer.isShortcutsModalShown() ||
-                el.modals.routine.root.style.display === 'flex' ||
-                el.modals.holidays.root.style.display === 'flex' ||
-                el.modals.import.root.style.display === 'flex';
-                
-            if (!isAnyModalOpen) {
-                el.modals.quickAdd.root.style.display = 'flex';
-                el.modals.quickAdd.input.value = '';
-                setTimeout(() => {
-                    el.modals.quickAdd.input.focus();
-                }, 50);
-            }
+            el.modals.quickAdd.root.style.display = 'flex';
+            el.modals.quickAdd.input.value = '';
+            setTimeout(() => {
+                el.modals.quickAdd.input.focus();
+            }, 50);
         } else if (e.key === 'u') {
             e.preventDefault();
             await ctx.store.undo();
