@@ -2,6 +2,8 @@
 
 エンジニアによる、エンジニアのための、爆速ナレッジ融合型htmlタスク管理ツール。
 
+🌐 **Web App (GitHub Pages)**: [https://nushitoritarou.github.io/kura-tas/](https://nushitoritarou.github.io/kura-tas/)
+
 ## 🚀 プロジェクト概要
 Kura-Tas は、HTML 1ファイルで完結する超軽量なタスク管理・ナレッジハブです。
 ブラウザの **File System Access API** を活用し、データはすべて利用者のローカルディレクトリに JSON/Markdown 形式で保存されます。サーバー不要、クラウド不要、プライバシーとスピードを最優先に設計されています。
