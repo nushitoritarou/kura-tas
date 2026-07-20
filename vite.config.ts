@@ -7,10 +7,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 let commitHash = 'unknown';
-try {
-  commitHash = child.execSync('git rev-parse --short HEAD').toString().trim();
-} catch (e) {
-  console.warn('Failed to get git commit hash');
+if (process.env.VITE_COMMIT_HASH) {
+  commitHash = process.env.VITE_COMMIT_HASH.trim().substring(0, 7);
+} else {
+  try {
+    commitHash = child.execSync('git rev-parse --short HEAD').toString().trim();
+  } catch (e) {
+    console.warn('Failed to get git commit hash');
+  }
 }
 
 const now = new Date();

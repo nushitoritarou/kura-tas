@@ -1,0 +1,93 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-repo
+
+      - name: Get main commit SHA
+        id: main_sha
+        run: |
+          cd main-repo
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build main
+        run: |
+          cd main-repo
+          npm ci
+          npm run build
+        env:
+          VITE_COMMIT_HASH: ${{ steps.main_sha.outputs.sha }}
+
+      - name: Checkout develop branch
+        id: checkout_develop
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: develop
+          path: develop-repo
+
+      - name: Get develop commit SHA
+        id: dev_sha
+        if: steps.checkout_develop.outcome == 'success'
+        run: |
+          cd develop-repo
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build develop
+        if: steps.checkout_develop.outcome == 'success'
+        run: |
+          cd develop-repo
+          npm ci
+          npm run build
+        env:
+          VITE_COMMIT_HASH: ${{ steps.dev_sha.outputs.sha }}
+
+      - name: Assemble GitHub Pages distribution
+        run: |
+          mkdir -p dist_pages/dev
+          cp -r main-repo/dist/* dist_pages/
+          if [ -d "develop-repo/dist" ]; then
+            cp -r develop-repo/dist/* dist_pages/dev/
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist_pages'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
