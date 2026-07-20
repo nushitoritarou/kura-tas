@@ -16,7 +16,7 @@ export async function handleSaveNote(ctx: WiringContext): Promise<void> {
             activeNote.body = el.notes.editor.value;
             await notesLogic.saveNote(activeNote, { notes: ctx.store.notes });
             notesRenderer.showSaveStatus('Saved');
-        });
+        }, { recordHistory: false });
     } catch (e: any) {
         globalRenderer.notifyError(e.message || 'ノートの保存中にエラーが発生しました');
     }
