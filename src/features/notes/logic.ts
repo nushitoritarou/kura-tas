@@ -26,17 +26,3 @@ export async function getActiveNote(deps: { notes: NoteStore; ui: UIStore; tasks
 export async function saveNote(note: Note, deps: { notes: NoteStore }): Promise<void> {
     await deps.notes.saveNote(note);
 }
-
-/** 特定のタスクに紐づく Note オブジェクトを取得する */
-export async function getNoteForTask(
-    taskId: string,
-    date: string,
-    deps: { notes: NoteStore; tasks: TaskStore }
-): Promise<Note> {
-    const { notes, tasks } = deps;
-    const task = tasks.getState().find(t => t.id === taskId);
-    if (!task) throw new Error('指定されたタスクが見つかりません');
-    
-    const noteId = task.noteId || getNoteId('task', task.id);
-    return await notes.getNote(noteId, { date, taskId: task.id });
-}

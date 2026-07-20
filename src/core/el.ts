@@ -26,10 +26,6 @@ export const el = {
     btnToday: document.getElementById('nav-today') as HTMLElement,
     btnUndo: document.getElementById('btn-undo') as HTMLButtonElement,
     btnRedo: document.getElementById('btn-redo') as HTMLButtonElement,
-    btnHolidays: document.getElementById('nav-holidays') as HTMLElement,
-    btnShortcuts: document.getElementById('nav-shortcuts') as HTMLElement,
-    btnRoutine: document.getElementById('nav-routine') as HTMLElement,
-    btnImport: document.getElementById('nav-import') as HTMLElement,
   },
 
   // 共通UI
@@ -53,13 +49,12 @@ export const el = {
   // タスク
   tasks: {
     list: document.getElementById('task-list') as HTMLElement,
-    btnCarryOver: document.getElementById('btn-carry-over') as HTMLElement,
   },
 
   notes: {
     panelTitle: document.getElementById('panel-title') as HTMLElement,
+    btnToggleView: document.getElementById('btn-toggle-view') as HTMLElement,
     btnSave: document.getElementById('btn-save-note') as HTMLElement,
-    btnPromote: document.getElementById('btn-promote-note') as HTMLElement,
     status: document.getElementById('save-status') as HTMLElement,
     editor: document.getElementById('editor') as HTMLTextAreaElement,
     preview: document.getElementById('preview') as HTMLElement,
@@ -69,52 +64,19 @@ export const el = {
   modals: {
     import: {
       root: document.getElementById('modal-import') as HTMLElement,
-      format: document.getElementById('import-format') as HTMLSelectElement,
       area: document.getElementById('import-area') as HTMLTextAreaElement,
       btnDoImport: document.getElementById('btn-do-import') as HTMLElement,
       btnCopySample: document.getElementById('btn-copy-sample') as HTMLElement,
       btnClose: document.getElementById('btn-close-import') as HTMLElement,
-      sampleContainer: document.getElementById('import-sample-container') as HTMLElement,
-      samplePre: document.getElementById('import-sample') as HTMLElement,
-      btnToggleSample: document.getElementById('btn-toggle-sample') as HTMLElement,
     },
-    routine: {
-      root: document.getElementById('modal-routine') as HTMLElement,
-      list: document.getElementById('routine-list') as HTMLElement,
-      input: document.getElementById('routine-new-text') as HTMLInputElement,
-      btnSubmit: document.getElementById('btn-add-routine') as HTMLElement,
-      btnClose: document.getElementById('btn-close-routine') as HTMLElement,
-      title: document.getElementById('routine-modal-title') as HTMLElement,
+    periodic: {
+      root: document.getElementById('modal-periodic') as HTMLElement,
+      list: document.getElementById('periodic-list') as HTMLElement,
+      input: document.getElementById('periodic-new-text') as HTMLInputElement,
+      btnSubmit: document.getElementById('btn-add-periodic') as HTMLElement,
+      btnClose: document.getElementById('btn-close-periodic') as HTMLElement,
+      title: document.getElementById('periodic-modal-title') as HTMLElement,
       dayCheckboxes: document.querySelectorAll('.day-checkbox') as NodeListOf<HTMLInputElement>,
-      holidayAdjustment: document.getElementById('routine-holiday-adjustment') as HTMLSelectElement,
-      scheduleType: document.getElementById('routine-schedule-type') as HTMLSelectElement,
-      daysContainer: document.getElementById('routine-days-container') as HTMLElement,
-      intervalContainer: document.getElementById('routine-interval-container') as HTMLElement,
-      intervalWeeks: document.getElementById('routine-interval-weeks') as HTMLInputElement,
-      baseDate: document.getElementById('routine-base-date') as HTMLInputElement,
-      monthlyDayContainer: document.getElementById('routine-monthly-day-container') as HTMLElement,
-      monthlyDay: document.getElementById('routine-monthly-day') as HTMLSelectElement,
-      monthlyWeekdayContainer: document.getElementById('routine-monthly-weekday-container') as HTMLElement,
-      weekIndex: document.getElementById('routine-week-index') as HTMLSelectElement,
-    },
-    holidays: {
-      root: document.getElementById('modal-holidays') as HTMLElement,
-      workdayCheckboxes: document.querySelectorAll('.workday-checkbox') as NodeListOf<HTMLInputElement>,
-      workdayContainer: document.getElementById('holiday-workdays-container') as HTMLElement,
-      dateInput: document.getElementById('holiday-date-input') as HTMLInputElement,
-      btnAddDate: document.getElementById('btn-add-holiday-date') as HTMLElement,
-      dateList: document.getElementById('holiday-list') as HTMLElement,
-      btnClose: document.getElementById('btn-close-holidays') as HTMLElement,
-    },
-    shortcuts: {
-      root: document.getElementById('modal-shortcuts') as HTMLElement,
-      btnClose: document.getElementById('btn-close-shortcuts') as HTMLElement,
-    },
-    quickAdd: {
-      root: document.getElementById('modal-quick-add') as HTMLElement,
-      input: document.getElementById('quick-add-input') as HTMLInputElement,
-      btnSubmit: document.getElementById('btn-do-quick-add') as HTMLElement,
-      btnClose: document.getElementById('btn-close-quick-add') as HTMLElement,
     }
   }
 };

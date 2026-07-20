@@ -33,9 +33,6 @@ Kura-Tas は、ブラウザの FileSystem Access API を活用した、サーバ
 9. **例外ベースのエラーハンドリングと統一通知**
    - バリデーションエラーや実行時エラーは、Logic層で具体的なメッセージを持つ例外（Error）をスローする。
    - これらの例外は Integration層（`main.ts`）でキャッチし、`globalRenderer.notifyError()` を通じてユーザーにフィードバックする。Logic層が直接 Renderer を呼んだり、サイレントに `return` してはならない。
-10. **エディタとプレビューの完全な等幅・表示位置の同期原則**
-    - ノート編集領域におけるエディタ（textarea）とプレビュー（backdrop/HTML）は、フォント（等幅）、フォントサイズ、行高、パディング、折り返しルールをピクセル単位で統一する。
-    - サブピクセルレンダリング（DPI/DPRやズーム倍率による小数点以下の実ピクセル幅のブレ）による文字位置の横ズレを防ぐため、物理的なボーダーなどレイアウト幅に影響を与えるCSSを避け、`box-shadow` やインライン要素等のレイアウトに影響しない手法で装飾を行う。これにより、文字開始位置とスクロール挙動における「ズレ0ピクセル」の視覚的整合性を常に保証すること。
 
 ---
 
@@ -48,8 +45,6 @@ Kura-Tas は、ブラウザの FileSystem Access API を活用した、サーバ
 - **Tier 3: 背景・詳細 (Backgrounds)**
   - **[構造とデータフロー](docs/arch/layers.md)**: ディレクトリ構成、各モジュールの役割、主要パターン。
   - **[テスト戦略](docs/arch/testing.md)**: テストの配置、分類、モックの境界。
-- **ADR (設計決定記録)**
-  - 設計判断の背景と決定事項は [docs/adr/](docs/adr/) に格納されています（例: [ADR-0001: ストレージ永続化戦略](docs/adr/0001-storage-strategy-local-only.md)）。
 
 ---
 
@@ -63,4 +58,3 @@ Kura-Tas は、ブラウザの FileSystem Access API を活用した、サーバ
 - **単一ファイル化**: `vite-plugin-singlefile` を使用し、JS/CSSを全て `index.html` に埋め込む。
 - **成果物**: `dist/index.html` の1ファイルのみで動作し、ポータビリティを維持する。
 - **デバッグモード**: `npm run build:debug` または URLパラメータ `?debug=1` により詳細ログを有効化可能。
-- **環境変数の注入**: ビルド時に `package.json` のバージョン情報、Gitコミットハッシュ、ビルド日時（JST）を環境変数（`__APP_VERSION__`, `__COMMIT_HASH__`, `__BUILD_TIME__`）として注入する。これらはアプリ起動時にバージョン表記（通常時 / デバッグ時）の表示更新に利用される。

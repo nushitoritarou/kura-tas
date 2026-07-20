@@ -5,23 +5,11 @@
 /**
  * Dateオブジェクトを YYYY-MM-DD 形式の文字列に変換する（ローカルタイム準拠）
  */
-export function formatDate(date: Date): string {
+function formatDate(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-}
-
-/**
- * YYYY-MM-DD 形式の日付文字列をローカルタイムゾーンに基づいて安全にDateオブジェクトに変換する
- */
-export function parseLocalDate(dateStr: string): Date {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    if (isNaN(date.getTime())) {
-        throw new Error(`Invalid date string: ${dateStr}`);
-    }
-    return date;
 }
 
 /**
@@ -44,42 +32,22 @@ export function getDayOfWeek(dateStr: string): number {
 }
 
 /**
- * 営業日かどうかを判定する
+ * 営業日（土日以外）かどうかを判定する
  */
-export function isWorkDay(date: Date, workDays: number[] = [1, 2, 3, 4, 5], holidays: string[] = []): boolean {
+export function isWorkDay(date: Date): boolean {
     const day = date.getDay();
-    if (!workDays.includes(day)) {
-        return false;
-    }
-    const dateStr = formatDate(date);
-    if (holidays.includes(dateStr)) {
-        return false;
-    }
-    return true;
+    return day !== 0 && day !== 6;
 }
 
 /**
- * 指定日の翌営業日を YYYY-MM-DD 形式で返す
+ * 指定日の翌営業日（土日以外）を YYYY-MM-DD 形式で返す
  */
-export function getNextWorkDay(dateStr: string, workDays: number[] = [1, 2, 3, 4, 5], holidays: string[] = []): string {
+export function getNextWorkDay(dateStr: string): string {
     const [y, m, d] = dateStr.split('-').map(Number);
     let date = new Date(y, m - 1, d);
     do {
         date.setDate(date.getDate() + 1);
-    } while (!isWorkDay(date, workDays, holidays));
-    
-    return formatDate(date);
-}
-
-/**
- * 指定日の前営業日を YYYY-MM-DD 形式で返す
- */
-export function getPrevWorkDay(dateStr: string, workDays: number[] = [1, 2, 3, 4, 5], holidays: string[] = []): string {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    let date = new Date(y, m - 1, d);
-    do {
-        date.setDate(date.getDate() - 1);
-    } while (!isWorkDay(date, workDays, holidays));
+    } while (!isWorkDay(date));
     
     return formatDate(date);
 }

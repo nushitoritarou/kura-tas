@@ -1,6 +1,6 @@
 {
   "name": "kura-tas",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "description": "エンジニアによる、エンジニアのための、爆速ナレッジ融合型タスク管理ツール。",
   "main": "index.js",
   "scripts": {

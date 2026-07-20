@@ -49,7 +49,7 @@ describe('features/global/logic', () => {
         vi.spyOn(store.config, 'load').mockResolvedValue(undefined);
         vi.spyOn(store.commonLinks, 'load').mockResolvedValue(undefined);
         vi.spyOn(store.inboxItems, 'load').mockResolvedValue(undefined);
-        vi.spyOn(store.routine, 'load').mockResolvedValue(undefined);
+        vi.spyOn(store.periodic, 'load').mockResolvedValue(undefined);
         vi.spyOn(store.ui, 'load').mockResolvedValue(undefined);
         vi.spyOn(store.tasks, 'load').mockResolvedValue(undefined);
         vi.spyOn(store.tasks, 'getTasksFor').mockResolvedValue([]);
