@@ -39,6 +39,7 @@ export function wireKeyboard(ctx: WiringContext): void {
             if (active && (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement)) {
                 active.blur();
                 e.preventDefault();
+                return;
             }
             // ショートカットモーダルが開いていたら閉じる
             if (globalRenderer.isShortcutsModalShown()) {
@@ -74,15 +75,10 @@ export function wireKeyboard(ctx: WiringContext): void {
             // 例外的に、インサートモードでのCtrl系ショートカットは許可する
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 's') {
-                    e.preventDefault();
-                    await handleSaveNote(ctx);
-
-                } else if (e.key === 'z') {
-                    e.preventDefault();
-                    await ctx.store.undo();
-                } else if (e.key === 'y') {
-                    e.preventDefault();
-                    await ctx.store.redo();
+                    if (document.activeElement === el.notes.editor) {
+                        e.preventDefault();
+                        await handleSaveNote(ctx);
+                    }
                 }
             }
             return;

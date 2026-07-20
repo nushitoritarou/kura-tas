@@ -139,13 +139,6 @@ export function wireNotes(ctx: WiringContext): void {
         await switchToPreviewMode(ctx);
     };
 
-    el.notes.editor.onkeydown = async (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            el.notes.editor.blur();
-        }
-    };
-
     el.notes.preview.onclick = async (e: MouseEvent) => {
         const target = e.target as HTMLElement;
 
