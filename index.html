@@ -18,8 +18,14 @@
                 </svg>
             </div>
             <h1 style="color:var(--destructive); margin-top:0;">Kura-Tas</h1>
-            <div style="font-size: 11px; color: var(--muted-foreground); margin-bottom: 20px;">
+            <div style="font-size: 11px; color: var(--muted-foreground); margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <span class="app-version">v--</span>
+                <a href="https://github.com/nushitoritarou/kura-tas" target="_blank" rel="noopener noreferrer" title="GitHub Repository" style="color: var(--muted-foreground); text-decoration: none; display: inline-flex; align-items: center;" aria-label="GitHub Repository">
+                    <!-- GitHub Octicons (MIT License - https://github.com/primer/octicons) -->
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                </a>
             </div>
             <button class="btn btn-primary" id="btn-setup" style="padding:15px 40px; font-size:1.1rem;">ディレクトリを開く</button>
             <div id="resume-container" class="hidden">
@@ -33,11 +39,22 @@
     <div class="container hidden" id="app-container">
         <!-- A. Left Sidebar -->
         <aside class="sidebar">
-            <div style="display:flex; align-items:center; gap:8px; padding:5px 10px; border-bottom:1px solid var(--border); margin-bottom:10px;">
-                <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" style="stroke: var(--ring);">
-                    <path d="M0.500137 4.53851L2.50014 3.73851M20.5001 4.53851L18.5001 3.73851M2.50014 3.73851L10.5001 0.538513L18.5001 3.73851M2.50014 3.73851V19.5385H18.5001V3.73851M8.50014 5.53851H12.5001V8.53851H8.50014V5.53851Z" stroke="currentColor" stroke-linecap="round"/>
-                </svg>
-                <span style="font-weight:bold; font-size:12px; color:var(--ring);">KURA-TAS</span>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:5px 10px; border-bottom:1px solid var(--border); margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" style="stroke: var(--ring);">
+                        <path d="M0.500137 4.53851L2.50014 3.73851M20.5001 4.53851L18.5001 3.73851M2.50014 3.73851L10.5001 0.538513L18.5001 3.73851M2.50014 3.73851V19.5385H18.5001V3.73851M8.50014 5.53851H12.5001V8.53851H8.50014V5.53851Z" stroke="currentColor" stroke-linecap="round"/>
+                    </svg>
+                    <span style="font-weight:bold; font-size:12px; color:var(--ring);">KURA-TAS</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button id="nav-shortcuts" class="icon-btn" title="キーボードショートカット (Shift+?)" style="background:none; border:none; cursor:pointer; font-size:14px; padding:2px; color:var(--muted-foreground); display:inline-flex; align-items:center;" aria-label="キーボードショートカット">⌨</button>
+                    <a href="https://github.com/nushitoritarou/kura-tas" target="_blank" rel="noopener noreferrer" title="GitHub Repository" style="color:var(--muted-foreground); text-decoration:none; display:inline-flex; align-items:center;" aria-label="GitHub Repository">
+                        <!-- GitHub Octicons (MIT License - https://github.com/primer/octicons) -->
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                        </svg>
+                    </a>
+                </div>
             </div>
             <h2>Navigation</h2>
             <div class="nav-item" id="nav-today">🏠 今日</div>
@@ -45,7 +62,6 @@
             <div class="nav-item" id="nav-routine">⚙ 定型タスク</div>
             <div class="nav-item" id="nav-import">📥 タスク読込 (AI連携)</div>
             <div class="nav-item" id="nav-holidays">📅 休日設定</div>
-            <div class="nav-item" id="nav-shortcuts" style="font-size: 11px; opacity: 0.6; margin-top: 10px;">⌨ ショートカット (Shift+?)</div>
 
 
             <div class="inbox-area">
