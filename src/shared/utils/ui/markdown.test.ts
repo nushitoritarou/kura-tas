@@ -47,6 +47,27 @@ describe('parseMarkdown', () => {
             'End text<br>';
         expect(parseMarkdown(input)).toBe(expected);
     });
+
+    it('引用句（blockquote）が正しくパースされること', () => {
+        const input = '> quote line 1\n> quote line 2\nnormal text';
+        const expected =
+            '<blockquote>' +
+            'quote line 1<br>' +
+            'quote line 2<br>' +
+            '</blockquote>' +
+            'normal text<br>';
+        expect(parseMarkdown(input)).toBe(expected);
+    });
+
+    it('打消し線（~~）が正しくパースされること', () => {
+        expect(parseMarkdown('~~strike~~')).toBe('<del>strike</del><br>');
+    });
+
+    it('ハイフン（-）による箇条書きが正しくパースされること', () => {
+        const input = '- Item 1\n- Item 2';
+        const expected = '<ul><li>Item 1</li><li>Item 2</li></ul>';
+        expect(parseMarkdown(input)).toBe(expected);
+    });
 });
 
 describe('parseMarkdownKeepSource', () => {
@@ -72,7 +93,8 @@ describe('parseMarkdownKeepSource', () => {
             '* Item 1\n* Item 2\n- Item 3',
             '```js\nconsole.log("hello");\n```\nNormal text\n[Google](https://google.com)',
             'Multiple\n\n\nNewlines',
-            '# heading\n## h2\n### h3\n* list\n- list2\n**bold**\n*italic*\n`inline`\n[link](http://url)'
+            '# heading\n## h2\n### h3\n* list\n- list2\n**bold**\n*italic*\n`inline`\n[link](http://url)',
+            '> quote text\n~~strike text~~'
         ];
 
         for (const input of inputs) {
@@ -89,6 +111,10 @@ describe('parseMarkdownKeepSource', () => {
         // 太字とインラインコード
         expect(parseMarkdownKeepSource('**bold**')).toContain('<span class="md-bold">**bold**</span>');
         expect(parseMarkdownKeepSource('`code`')).toContain('<span class="md-inline-code">`code`</span>');
+
+        // 引用句と打消し線
+        expect(parseMarkdownKeepSource('> quote')).toContain('<span class="md-blockquote">&gt; quote</span>');
+        expect(parseMarkdownKeepSource('~~strike~~')).toContain('<span class="md-strikethrough">~~strike~~</span>');
 
         // リンク
         const linkOutput = parseMarkdownKeepSource('[Google](https://google.com)');

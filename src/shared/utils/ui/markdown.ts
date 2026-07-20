@@ -10,6 +10,7 @@ export function parseMarkdown(text: string): string {
     let codeLanguage = '';
     let codeContent: string[] = [];
     let inList = false;
+    let inBlockquote = false;
 
     // ヘルパー：インライン要素のパース
     function parseInline(str: string): string {
@@ -17,6 +18,7 @@ export function parseMarkdown(text: string): string {
             .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank">$1</a>')
             .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+            .replace(/~~(.*?)~~/gim, '<del>$1</del>')
             .replace(/`(.*?)`/gim, '<code>$1</code>');
     }
 
@@ -56,8 +58,28 @@ export function parseMarkdown(text: string): string {
             continue;
         }
 
+        // 引用（Blockquote）の判定
+        const quoteMatch = line.match(/^>\s?(.*)$/);
+        if (quoteMatch) {
+            if (inList) {
+                result.push('</ul>');
+                inList = false;
+            }
+            if (!inBlockquote) {
+                result.push('<blockquote>');
+                inBlockquote = true;
+            }
+            result.push(parseInline(quoteMatch[1]) + '<br>');
+            continue;
+        } else {
+            if (inBlockquote) {
+                result.push('</blockquote>');
+                inBlockquote = false;
+            }
+        }
+
         // リスト（箇条書き）の判定
-        const listMatch = line.match(/^\*\s+(.*)$/);
+        const listMatch = line.match(/^(?:\*|-)\s+(.*)$/);
         if (listMatch) {
             if (!inList) {
                 result.push('<ul>');
@@ -96,6 +118,11 @@ export function parseMarkdown(text: string): string {
     // 最後にリストが開いたままなら閉じる
     if (inList) {
         result.push('</ul>');
+    }
+
+    // 最後に引用が開いたままなら閉じる
+    if (inBlockquote) {
+        result.push('</blockquote>');
     }
 
     // コードブロックが開いたままなら閉じる
@@ -160,6 +187,9 @@ export function parseMarkdownKeepSource(text: string): string {
         // イタリック: *text*
         processed = processed.replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<span class="md-italic">*$1*</span>');
 
+        // 打消し線: ~~text~~
+        processed = processed.replace(/(~~.*?~~)/g, '<span class="md-strikethrough">$1</span>');
+
         // インラインコード: `code`
         processed = processed.replace(/(`.*?`)/g, '<span class="md-inline-code">$1</span>');
 
@@ -186,6 +216,8 @@ export function parseMarkdownKeepSource(text: string): string {
             processedLines.push(processed.replace(/^(\s*)(\*\s+)/, '$1<span class="md-bullet">$2</span>'));
         } else if (processed.trim().startsWith('- ')) {
             processedLines.push(processed.replace(/^(\s*)(-\s+)/, '$1<span class="md-bullet">$2</span>'));
+        } else if (processed.trim().startsWith('&gt;')) {
+            processedLines.push(`<span class="md-blockquote">${processed}</span>`);
         } else {
             processedLines.push(processed);
         }
