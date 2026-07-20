@@ -3,12 +3,18 @@ import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import * as child from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
 let commitHash = 'unknown';
-try {
-  commitHash = child.execSync('git rev-parse --short HEAD').toString().trim();
-} catch (e) {
-  console.warn('Failed to get git commit hash');
+if (process.env.VITE_COMMIT_HASH) {
+  commitHash = process.env.VITE_COMMIT_HASH.trim().substring(0, 7);
+} else {
+  try {
+    commitHash = child.execSync('git rev-parse --short HEAD').toString().trim();
+  } catch (e) {
+    console.warn('Failed to get git commit hash');
+  }
 }
 
 const now = new Date();
@@ -25,13 +31,25 @@ const buildTime = jstDate.toLocaleString('ja-JP', {
   timeZone: 'UTC' // Since we already added the offset, we treat it as UTC to prevent further offset
 });
 
+// package.json から version を読み込む
+let version = '0.0.0';
+try {
+  const pkgPath = path.resolve(__dirname, 'package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+  version = pkg.version || '0.0.0';
+} catch (e) {
+  console.warn('Failed to read version from package.json', e);
+}
+
 export default defineConfig(({ mode }) => {
   const isDebug = mode === 'debug';
 
   return {
     plugins: [viteSingleFile(), tsconfigPaths()],
     define: {
-      __APP_VERSION__: JSON.stringify(`${commitHash} (${buildTime})`),
+      __APP_VERSION__: JSON.stringify(version),
+      __COMMIT_HASH__: JSON.stringify(commitHash),
+      __BUILD_TIME__: JSON.stringify(buildTime),
       __DEBUG_MODE__: isDebug,
     },
     test: {

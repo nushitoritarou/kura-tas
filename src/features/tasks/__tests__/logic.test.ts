@@ -2,21 +2,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as logic from '../logic';
 import { TaskStore } from '@/core/store/TaskStore';
 import { InboxItemStore } from '@/core/store/InboxItemStore';
+import { NoteStore } from '@/core/store/NoteStore';
 import { Task } from '@/types';
 
 vi.mock('@/core/store/TaskStore');
 vi.mock('@/core/store/InboxItemStore');
+vi.mock('@/core/store/NoteStore');
 vi.mock('@/core/storage');
 
 describe('tasks logic', () => {
     let tasksStore: TaskStore;
     let inboxStore: InboxItemStore;
+    let noteStore: NoteStore;
     let deps: logic.TaskDeps;
 
     beforeEach(() => {
         tasksStore = new TaskStore() as any;
         inboxStore = new InboxItemStore() as any;
-        deps = { tasks: tasksStore, inboxItems: inboxStore };
+        noteStore = new NoteStore() as any;
+        deps = { tasks: tasksStore, inboxItems: inboxStore, notes: noteStore };
         vi.clearAllMocks();
     });
 
@@ -25,13 +29,14 @@ describe('tasks logic', () => {
         expect(tasksStore.getTasksFor).toHaveBeenCalledWith('2024-06-01');
     });
 
-    it('addTask がタスクを追加すること', async () => {
-        await logic.addTask('new task', '2024-06-01', deps);
-        expect(tasksStore.add).toHaveBeenCalledWith(expect.objectContaining({
+    it('addTask がタスクを追加し、作成されたタスクを返すこと', async () => {
+        const task = await logic.addTask('new task', '2024-06-01', deps);
+        expect(task).toEqual(expect.objectContaining({
             text: 'new task',
             originalDate: "2024-06-01", date: '2024-06-01',
             done: false
         }));
+        expect(tasksStore.add).toHaveBeenCalledWith(task);
     });
 
     it('addTask が内容空の場合にエラーを投げること', async () => {
@@ -135,6 +140,7 @@ describe('tasks logic', () => {
             if (date === prevDate) return [oldTask];
             return [];
         });
+        vi.mocked(noteStore.getNote).mockResolvedValue({ id: 'task-old-1', title: 'task-old-1', body: '', date: prevDate, type: 'task' });
 
         const addedCount = await logic.carryOverTasks(targetDate, 1, deps);
         
@@ -143,7 +149,8 @@ describe('tasks logic', () => {
         expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({
             id: 'old-1',
             done: true,
-            text: 'incomplete (Carried Over)'
+            text: 'incomplete (Carried Over)',
+            noteId: undefined
         }));
         // 新しいタスクを追加
         expect(tasksStore.add).toHaveBeenCalledWith(expect.objectContaining({
@@ -153,20 +160,203 @@ describe('tasks logic', () => {
         }));
     });
 
+    it('carryOverTasks がノートのある未完了タスクを繰り越す際、ノートも移動すること', async () => {
+        const targetDate = '2024-06-03';
+        const prevDate = '2024-06-02';
+        
+        const oldTask: Task = { id: 'old-1', text: 'incomplete', originalDate: "2024-06-01", date: prevDate, done: false };
+        
+        vi.mocked(tasksStore.getTasksFor).mockImplementation(async (date) => {
+            if (date === targetDate) return [];
+            if (date === prevDate) return [oldTask];
+            return [];
+        });
+
+        // ノートが存在する状態をモック
+        vi.mocked(noteStore.getNote).mockResolvedValue({
+            id: 'task-old-1',
+            title: 'task-old-1',
+            body: 'note content',
+            date: prevDate,
+            type: 'task',
+            taskId: 'old-1'
+        });
+
+        let newTaskId = '';
+        vi.mocked(tasksStore.add).mockImplementation(async (task) => {
+            newTaskId = task.id;
+        });
+
+        const addedCount = await logic.carryOverTasks(targetDate, 1, deps);
+        
+        expect(addedCount).toBe(1);
+        expect(newTaskId).not.toBe('');
+        
+        // 元のタスクの更新
+        expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({
+            id: 'old-1',
+            done: true,
+            noteId: undefined
+        }));
+
+        // ノートの移動処理が呼ばれていること
+        expect(noteStore.moveNote).toHaveBeenCalledWith(
+            'task-old-1',
+            `task-${newTaskId}`,
+            { date: targetDate, taskId: newTaskId }
+        );
+    });
+
+    describe('preloadCarryOverNotes', () => {
+        it('未完了タスクのノートを正しくロード（getNote）すること', async () => {
+            const targetDate = '2024-06-03';
+            const prevDate = '2024-06-02';
+            
+            const oldTask: Task = { id: 'old-1', text: 'incomplete', originalDate: "2024-06-01", date: prevDate, done: false };
+            
+            vi.mocked(tasksStore.getTasksFor).mockImplementation(async (date) => {
+                if (date === targetDate) return [];
+                if (date === prevDate) return [oldTask];
+                return [];
+            });
+
+            await logic.preloadCarryOverNotes(targetDate, 1, deps);
+            
+            expect(noteStore.getNote).toHaveBeenCalledWith('task-old-1', { date: prevDate, taskId: 'old-1' });
+        });
+    });
+
     describe('importTasks', () => {
-        it('配列からタスクをインポートすること', async () => {
+        it('json形式: 配列からタスクをインポートすること', async () => {
             const json = JSON.stringify([
                 'task1',
                 { text: 'task2', deadline: '2024-06-10', delegated: true }
             ]);
-            await logic.importTasks(json, '2024-06-01', deps);
+            await logic.importTasks(json, '2024-06-01', 'json', deps);
             expect(tasksStore.add).toHaveBeenCalledTimes(2);
             expect(tasksStore.add).toHaveBeenNthCalledWith(1, expect.objectContaining({ text: 'task1', originalDate: "2024-06-01", date: '2024-06-01' }));
             expect(tasksStore.add).toHaveBeenNthCalledWith(2, expect.objectContaining({ text: 'task2', deadline: '2024-06-10', delegated: true }));
         });
 
-        it('不正なJSONの場合にエラーを投げること', async () => {
-            await expect(logic.importTasks('invalid json', '2024-06-01', deps)).rejects.toThrow('Invalid JSON format');
+        it('json形式: 不正なJSONの場合にエラーを投げること', async () => {
+            await expect(logic.importTasks('invalid json', '2024-06-01', 'json', deps)).rejects.toThrow('Invalid JSON format');
+        });
+
+        it('json形式: 配列でないオブジェクトの場合にエラーを投げること', async () => {
+            await expect(logic.importTasks('{"key": "value"}', '2024-06-01', 'json', deps)).rejects.toThrow('JSON data must be an array');
+        });
+
+        it('text形式: 改行区切りテキストからタスクをインポートし、空行を無視すること', async () => {
+            const text = "line1\n  \n\r\nline2\nline3";
+            await logic.importTasks(text, '2024-06-01', 'text', deps);
+            expect(tasksStore.add).toHaveBeenCalledTimes(3);
+            expect(tasksStore.add).toHaveBeenNthCalledWith(1, expect.objectContaining({ text: 'line1', originalDate: "2024-06-01", date: '2024-06-01' }));
+            expect(tasksStore.add).toHaveBeenNthCalledWith(2, expect.objectContaining({ text: 'line2', originalDate: "2024-06-01", date: '2024-06-01' }));
+            expect(tasksStore.add).toHaveBeenNthCalledWith(3, expect.objectContaining({ text: 'line3', originalDate: "2024-06-01", date: '2024-06-01' }));
+        });
+
+        it('auto形式: JSON配列の場合はJSONとしてインポートすること', async () => {
+            const json = JSON.stringify([
+                'task1',
+                { text: 'task2', deadline: '2024-06-10', delegated: true }
+            ]);
+            await logic.importTasks(json, '2024-06-01', 'auto', deps);
+            expect(tasksStore.add).toHaveBeenCalledTimes(2);
+            expect(tasksStore.add).toHaveBeenNthCalledWith(1, expect.objectContaining({ text: 'task1', originalDate: "2024-06-01", date: '2024-06-01' }));
+            expect(tasksStore.add).toHaveBeenNthCalledWith(2, expect.objectContaining({ text: 'task2', deadline: '2024-06-10', delegated: true }));
+        });
+
+        it('auto形式: JSON配列でない場合（パースエラー等）はテキストとしてインポートすること', async () => {
+            const text = "invalid json\nline2";
+            await logic.importTasks(text, '2024-06-01', 'auto', deps);
+            expect(tasksStore.add).toHaveBeenCalledTimes(2);
+            expect(tasksStore.add).toHaveBeenNthCalledWith(1, expect.objectContaining({ text: 'invalid json', originalDate: "2024-06-01", date: '2024-06-01' }));
+            expect(tasksStore.add).toHaveBeenNthCalledWith(2, expect.objectContaining({ text: 'line2', originalDate: "2024-06-01", date: '2024-06-01' }));
+        });
+
+        it('auto形式: [ で始まるが無効なJSONの場合は、テキストにフォールバックせずエラーを投げること', async () => {
+            const text = '[\n  {"text": "task1"}\n]\ninvalid-extra-text';
+            await expect(logic.importTasks(text, '2024-06-01', 'auto', deps)).rejects.toThrow('Invalid JSON format');
+        });
+    });
+
+    describe('getNextTaskId / getPrevTaskId', () => {
+        const mockTasks = [
+            { id: 'task-1' },
+            { id: 'task-2' },
+            { id: 'task-3' }
+        ];
+
+        it('getNextTaskId: 空リストの場合はnullを返すこと', () => {
+            expect(logic.getNextTaskId([], null)).toBeNull();
+        });
+
+        it('getNextTaskId: currentIdがnullの場合は最初のタスクIDを返すこと', () => {
+            expect(logic.getNextTaskId(mockTasks, null)).toBe('task-1');
+        });
+
+        it('getNextTaskId: currentIdがリストにない場合は最初のタスクIDを返すこと', () => {
+            expect(logic.getNextTaskId(mockTasks, 'unknown')).toBe('task-1');
+        });
+
+        it('getNextTaskId: 次のタスクIDを取得できること', () => {
+            expect(logic.getNextTaskId(mockTasks, 'task-1')).toBe('task-2');
+            expect(logic.getNextTaskId(mockTasks, 'task-2')).toBe('task-3');
+        });
+
+        it('getNextTaskId: 最後のタスクの場合は最後のタスクIDのままであること', () => {
+            expect(logic.getNextTaskId(mockTasks, 'task-3')).toBe('task-3');
+        });
+
+        it('getPrevTaskId: 空リストの場合はnullを返すこと', () => {
+            expect(logic.getPrevTaskId([], null)).toBeNull();
+        });
+
+        it('getPrevTaskId: currentIdがnullの場合は最後のタスクIDを返すこと', () => {
+            expect(logic.getPrevTaskId(mockTasks, null)).toBe('task-3');
+        });
+
+        it('getPrevTaskId: currentIdがリストにない場合は最後のタスクIDを返すこと', () => {
+            expect(logic.getPrevTaskId(mockTasks, 'unknown')).toBe('task-3');
+        });
+
+        it('getPrevTaskId: 前のタスクIDを取得できること', () => {
+            expect(logic.getPrevTaskId(mockTasks, 'task-3')).toBe('task-2');
+            expect(logic.getPrevTaskId(mockTasks, 'task-2')).toBe('task-1');
+        });
+
+        it('getPrevTaskId: 最初のタスクの場合は最初のタスクIDのままであること', () => {
+            expect(logic.getPrevTaskId(mockTasks, 'task-1')).toBe('task-1');
+        });
+    });
+
+    describe('getTaskIdAfterRemoval', () => {
+        const mockTasks = [
+            { id: 'task-1' },
+            { id: 'task-2' },
+            { id: 'task-3' }
+        ];
+
+        it('空リストの場合はnullを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval([], 'task-1')).toBeNull();
+        });
+
+        it('タスクリストに対象が存在しない場合はnullを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval(mockTasks, 'unknown')).toBeNull();
+        });
+
+        it('タスクが1つだけの場合はnullを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval([{ id: 'task-1' }], 'task-1')).toBeNull();
+        });
+
+        it('中間タスク削除時に次のタスクIDを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval(mockTasks, 'task-1')).toBe('task-2');
+            expect(logic.getTaskIdAfterRemoval(mockTasks, 'task-2')).toBe('task-3');
+        });
+
+        it('最後のタスク削除時に前のタスクIDを返すこと', () => {
+            expect(logic.getTaskIdAfterRemoval(mockTasks, 'task-3')).toBe('task-2');
         });
     });
 });
+

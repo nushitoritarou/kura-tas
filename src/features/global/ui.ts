@@ -49,3 +49,26 @@ export function calculateMenuPosition(
         y: Math.max(0, y)
     };
 }
+
+/**
+ * 表示用のバージョン文字列を生成する
+ */
+export function formatVersionText(
+    version: string,
+    isDebug: boolean,
+    commitHash: string = 'unknown',
+    buildTime: string = 'unknown'
+): string {
+    if (isDebug) {
+        return `v${version} (commit: ${commitHash}, built: ${buildTime})`;
+    }
+    return `v${version}`;
+}
+
+/**
+ * 表示用のドキュメントタイトルを生成する
+ */
+export function formatDocumentTitle(version: string): string {
+    return `Kura-Tas v${version}`;
+}
+

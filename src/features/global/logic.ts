@@ -1,7 +1,7 @@
 import type { ConfigStore } from '@/core/store/ConfigStore';
 import type { CommonLinkStore } from '@/core/store/CommonLinkStore';
 import type { InboxItemStore } from '@/core/store/InboxItemStore';
-import type { PeriodicStore } from '@/core/store/PeriodicStore';
+import type { RoutineStore } from '@/core/store/RoutineStore';
 import type { UIStore } from '@/core/store/UIStore';
 import type { HandleStore } from '@/core/store/HandleStore';
 import type { TaskStore } from '@/core/store/TaskStore';
@@ -16,7 +16,7 @@ export interface GlobalDeps {
     config: ConfigStore;
     commonLinks: CommonLinkStore;
     inboxItems: InboxItemStore;
-    periodic: PeriodicStore;
+    routine: RoutineStore;
     ui: UIStore;
     handle: HandleStore;
     tasks: TaskStore;
@@ -47,7 +47,7 @@ export async function setupStorage(handle: FileSystemDirectoryHandle, deps: Glob
         deps.config.load(),
         deps.commonLinks.load(),
         deps.inboxItems.load(),
-        deps.periodic.load(),
+        deps.routine.load(),
         deps.tasks.load(),
         deps.notes.load(),
         deps.ui.load()

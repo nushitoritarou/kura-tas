@@ -6,7 +6,8 @@ vi.mock('@/core/storage', () => ({
     storage: {
         readText: vi.fn(),
         writeText: vi.fn(),
-        listDirWithMeta: vi.fn()
+        listDirWithMeta: vi.fn(),
+        deleteFile: vi.fn()
     }
 }));
 
@@ -103,5 +104,45 @@ describe('NoteStore', () => {
         // メモリ上の状態も戻っていること
         const restoredNote = await store.getNote('noteA', { date: '' });
         expect(restoredNote.body).toBe('Content A');
+    });
+
+    describe('moveNote()', () => {
+        it('古いノートが存在する場合、メタデータを更新し新しい場所に書き込み、古いファイルを削除すること', async () => {
+            const store = new NoteStore();
+            vi.mocked(storage.readText).mockResolvedValue('---\ntitle: Old Note\ndate: 2026-06-07\ntype: task\ntaskId: old-id\n---\n# Note Content');
+            vi.mocked(storage.writeText).mockResolvedValue(undefined);
+            vi.mocked(storage.deleteFile).mockResolvedValue(undefined);
+
+            await store.moveNote('task-old-id', 'task-new-id', { date: '2026-06-08', taskId: 'new-id' });
+
+            // 古いファイルを読み込んでいること
+            expect(storage.readText).toHaveBeenCalledWith('notes/task-old-id.md');
+
+            // 新しいメタデータで書き込んでいること
+            expect(storage.writeText).toHaveBeenCalledWith(
+                'notes/task-new-id.md',
+                expect.stringContaining('title: Old Note\ndate: 2026-06-08\ntype: task\ntaskId: new-id\n---\n\n# Note Content')
+            );
+
+            // 古いファイルを削除していること
+            expect(storage.deleteFile).toHaveBeenCalledWith('notes/task-old-id.md');
+
+            // メモリ上の状態が更新されていること
+            const note = await store.getNote('task-new-id', { date: '2026-06-08' });
+            expect(note.title).toBe('Old Note');
+            expect(note.body).toBe('# Note Content');
+            expect(note.date).toBe('2026-06-08');
+            expect(note.taskId).toBe('new-id');
+        });
+
+        it('古いノートが存在しない場合、何もしないこと', async () => {
+            const store = new NoteStore();
+            vi.mocked(storage.readText).mockResolvedValue(null);
+
+            await store.moveNote('task-non-existent', 'task-new-id', { date: '2026-06-08', taskId: 'new-id' });
+
+            expect(storage.writeText).not.toHaveBeenCalled();
+            expect(storage.deleteFile).not.toHaveBeenCalled();
+        });
     });
 });

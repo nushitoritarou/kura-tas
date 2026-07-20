@@ -24,15 +24,15 @@ export function showResumeContainer(dirName: string): void {
 /**
  * バージョン情報を表示する
  */
-export function displayVersion(version: string, isDebug: boolean): void {
+export function displayVersion(version: string, isDebug: boolean, commitHash: string = 'unknown', buildTime: string = 'unknown'): void {
+    const versionText = ui.formatVersionText(version, isDebug, commitHash, buildTime);
+    const documentTitle = ui.formatDocumentTitle(version);
+
     el.app.version.forEach(element => {
-        if (isDebug) {
-            element.style.display = 'inline';
-            element.textContent = `Version: ${version}`;
-        } else {
-            element.style.display = 'none';
-        }
+        element.style.display = 'inline';
+        element.textContent = versionText;
     });
+    document.title = documentTitle;
 }
 
 /**
@@ -113,3 +113,18 @@ export function confirmAction(message: string): boolean {
 export function notifyError(message: string): void {
     alert(message);
 }
+
+/**
+ * ショートカットモーダルの表示状態を切り替える
+ */
+export function toggleShortcutsModal(show: boolean): void {
+    el.modals.shortcuts.root.style.display = show ? 'flex' : 'none';
+}
+
+/**
+ * ショートカットモーダルが表示されているか判定する
+ */
+export function isShortcutsModalShown(): boolean {
+    return el.modals.shortcuts.root.style.display === 'flex';
+}
+
