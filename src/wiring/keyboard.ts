@@ -5,7 +5,7 @@ import * as tasksLogic from '@/features/tasks/logic';
 import * as routineLogic from '@/features/routine/logic';
 import * as routineRenderer from '@/features/routine/renderer';
 import * as holidaysRenderer from '@/features/holidays/renderer';
-import { handleSaveNote } from './notes';
+import { handleSaveNote, switchToEditMode } from './notes';
 import { WiringContext } from './context';
 
 export function wireKeyboard(ctx: WiringContext): void {
@@ -50,6 +50,7 @@ export function wireKeyboard(ctx: WiringContext): void {
             if (active && (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement)) {
                 active.blur();
                 e.preventDefault();
+                return;
             }
             // ショートカットモーダルが開いていたら閉じる
             if (globalRenderer.isShortcutsModalShown()) {
@@ -90,17 +91,10 @@ export function wireKeyboard(ctx: WiringContext): void {
             // 例外的に、インサートモードでのCtrl系ショートカットは許可する
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 's') {
-                    e.preventDefault();
-                    await handleSaveNote(ctx);
-                } else if (e.key === 'p') {
-                    e.preventDefault();
-                    el.notes.btnToggleView.click();
-                } else if (e.key === 'z') {
-                    e.preventDefault();
-                    await ctx.store.undo();
-                } else if (e.key === 'y') {
-                    e.preventDefault();
-                    await ctx.store.redo();
+                    if (document.activeElement === el.notes.editor) {
+                        e.preventDefault();
+                        await handleSaveNote(ctx);
+                    }
                 }
             }
             return;
@@ -112,9 +106,7 @@ export function wireKeyboard(ctx: WiringContext): void {
             if (e.key === 's') {
                 e.preventDefault();
                 await handleSaveNote(ctx);
-            } else if (e.key === 'p') {
-                e.preventDefault();
-                el.notes.btnToggleView.click();
+
             } else if (e.key === 'z') {
                 e.preventDefault();
                 await ctx.store.undo();
@@ -261,14 +253,7 @@ export function wireKeyboard(ctx: WiringContext): void {
             el.inbox.input.focus();
         } else if (e.key === 'e') {
             e.preventDefault();
-            if (!ctx.store.ui.getState().isEditMode) {
-                await ctx.dispatchAction(async () => {
-                    ctx.store.ui.update({ isEditMode: true });
-                }, { recordHistory: false });
-            }
-            setTimeout(() => {
-                el.notes.editor.focus();
-            }, 50);
+            await switchToEditMode(ctx);
         } else if (e.key === '?' || e.key === 'Help') {
             e.preventDefault();
             // ショートカットモーダルの表示状態をトグル

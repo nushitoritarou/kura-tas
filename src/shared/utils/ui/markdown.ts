@@ -107,3 +107,94 @@ export function parseMarkdown(text: string): string {
 
     return result.join('');
 }
+
+/**
+ * 元のMarkdownテキストの文字数や文字順序、改行位置を一切変えずに、
+ * プレビュー用の装飾HTML（spanやaタグ等）で囲むだけのパースを行う。
+ */
+export function parseMarkdownKeepSource(text: string): string {
+    if (!text) return '';
+
+    // HTMLエスケープ（タグが意図せずレンダリングされるのを防ぐ）
+    const escapeHtml = (str: string) => str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    const lines = text.split('\n');
+    const processedLines: string[] = [];
+    let inCodeBlock = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const escapedLine = escapeHtml(line);
+
+        // --- 1. コードブロック of 処理 ---
+        if (escapedLine.trim().startsWith('```')) {
+            if (inCodeBlock) {
+                inCodeBlock = false;
+                processedLines.push(`</span><span class="md-code-fence">${escapedLine}</span></div>`);
+            } else {
+                inCodeBlock = true;
+                processedLines.push(`<div class="md-codeblock-container">` +
+                                   `<button class="btn-copy-code">Copy</button>` +
+                                   `<span class="md-code-fence">${escapedLine}</span>` +
+                                   `<span class="md-code-body">`);
+            }
+            continue;
+        }
+
+        if (inCodeBlock) {
+            processedLines.push(escapedLine);
+            continue;
+        }
+
+        // --- 2. インライン要素の処理 (文字数を変更しない) ---
+        let processed = escapedLine;
+
+        // 太字: **text**
+        processed = processed.replace(/(\*\*.*?\*\*)/g, '<span class="md-bold">$1</span>');
+
+        // イタリック: *text*
+        processed = processed.replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<span class="md-italic">*$1*</span>');
+
+        // インラインコード: `code`
+        processed = processed.replace(/(`.*?`)/g, '<span class="md-inline-code">$1</span>');
+
+        // リンク: [text](url) の記法を残し、url の部分のみを <a> にする
+        processed = processed.replace(/(\[)(.*?)(\]\()([^\)]+?)(\))/g, 
+            '<span class="md-link-bracket">$1</span>' +
+            '<span class="md-link-text">$2</span>' +
+            '<span class="md-link-bracket">$3</span>' +
+            '<a href="$4" target="_blank" class="md-link-url">$4</a>' +
+            '<span class="md-link-bracket">$5</span>'
+        );
+
+        // 生のURLの処理（すでにタグ属性やタグ中身になっているものは除外する）
+        processed = processed.replace(/(?<!["'>\/>])(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="md-link-url">$1</a>');
+
+        // --- 3. ブロック要素の処理 ---
+        if (processed.startsWith('### ')) {
+            processedLines.push(`<span class="md-h3">${processed}</span>`);
+        } else if (processed.startsWith('## ')) {
+            processedLines.push(`<span class="md-h2">${processed}</span>`);
+        } else if (processed.startsWith('# ')) {
+            processedLines.push(`<span class="md-h1">${processed}</span>`);
+        } else if (processed.trim().startsWith('* ')) {
+            processedLines.push(processed.replace(/^(\s*)(\*\s+)/, '$1<span class="md-bullet">$2</span>'));
+        } else if (processed.trim().startsWith('- ')) {
+            processedLines.push(processed.replace(/^(\s*)(-\s+)/, '$1<span class="md-bullet">$2</span>'));
+        } else {
+            processedLines.push(processed);
+        }
+    }
+
+    if (inCodeBlock) {
+        processedLines.push('</span></div>'); // 閉じ忘れ
+    }
+
+    return processedLines.join('\n');
+}
+
