@@ -13,7 +13,7 @@ export class UIStore extends BaseStore<UIState> {
             currentDate: '',
             lastKnownToday: '',
             activeTaskId: null,
-            isEditMode: true,
+            isEditMode: false,
             version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0',
             debugMode: typeof __DEBUG_MODE__ !== 'undefined' ? __DEBUG_MODE__ : false
         });
@@ -31,7 +31,14 @@ export class UIStore extends BaseStore<UIState> {
      * 永続化がないため、BaseStore.enqueue は使わずに即時反映する
      */
     update(patch: Partial<UIState>): void {
-        this.state = { ...this.state, ...patch };
+        const nextPatch = { ...patch };
+        // 日付またはアクティブタスクが変更された場合、明示的な指定がない限り自動的にプレビューモードにする
+        if ('activeTaskId' in patch || 'currentDate' in patch) {
+            if (!('isEditMode' in patch)) {
+                nextPatch.isEditMode = false;
+            }
+        }
+        this.state = { ...this.state, ...nextPatch };
         this.notifyMutation();
     }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseMarkdown } from './markdown';
+import { parseMarkdown, parseMarkdownKeepSource } from './markdown';
 
 describe('parseMarkdown', () => {
     it('インライン要素が正しくパースされること', () => {
@@ -46,5 +46,69 @@ describe('parseMarkdown', () => {
             '<pre><code class="language-js">console.log(1);</code></pre>' +
             'End text<br>';
         expect(parseMarkdown(input)).toBe(expected);
+    });
+});
+
+describe('parseMarkdownKeepSource', () => {
+    const unescapeHtml = (str: string) => str
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
+
+    const getPlainText = (html: string) => {
+        // buttonタグとその中身を除外
+        const htmlWithoutButtons = html.replace(/<button[^>]*>.*?<\/button>/g, '');
+        // タグをすべて除去
+        const tagsRemoved = htmlWithoutButtons.replace(/<[^>]*>/g, '');
+        // HTMLエスケープを元に戻す
+        return unescapeHtml(tagsRemoved);
+    };
+
+    it('変換後のプレーンテキストが元のテキストと完全に一致すること（文字数・改行位置の維持）', () => {
+        const inputs = [
+            '# Title\nSome text with **bold** and `code`',
+            '* Item 1\n* Item 2\n- Item 3',
+            '```js\nconsole.log("hello");\n```\nNormal text\n[Google](https://google.com)',
+            'Multiple\n\n\nNewlines',
+            '# heading\n## h2\n### h3\n* list\n- list2\n**bold**\n*italic*\n`inline`\n[link](http://url)'
+        ];
+
+        for (const input of inputs) {
+            const output = parseMarkdownKeepSource(input);
+            expect(getPlainText(output)).toBe(input);
+        }
+    });
+
+    it('Markdown要素が正しくspan等のタグで囲まれること', () => {
+        // 見出し
+        expect(parseMarkdownKeepSource('# Heading')).toContain('<span class="md-h1"># Heading</span>');
+        expect(parseMarkdownKeepSource('## H2')).toContain('<span class="md-h2">## H2</span>');
+
+        // 太字とインラインコード
+        expect(parseMarkdownKeepSource('**bold**')).toContain('<span class="md-bold">**bold**</span>');
+        expect(parseMarkdownKeepSource('`code`')).toContain('<span class="md-inline-code">`code`</span>');
+
+        // リンク
+        const linkOutput = parseMarkdownKeepSource('[Google](https://google.com)');
+        expect(linkOutput).toContain('<span class="md-link-bracket">[</span>');
+        expect(linkOutput).toContain('<span class="md-link-text">Google</span>');
+        expect(linkOutput).toContain('<a href="https://google.com" target="_blank" class="md-link-url">https://google.com</a>');
+
+        // コードブロック
+        const codeOutput = parseMarkdownKeepSource('```js\nconsole.log(1);\n```');
+        expect(codeOutput).toContain('<div class="md-codeblock-container">');
+        expect(codeOutput).toContain('<button class="btn-copy-code"');
+        expect(codeOutput).toContain('<span class="md-code-fence">```js</span>');
+        expect(codeOutput).toContain('<span class="md-code-body">');
+        expect(codeOutput).toContain('<span class="md-code-fence">```</span></div>');
+    });
+
+    it('生のURLが正しくリンクに変換されること', () => {
+        const input = '生のURL: https://github.com です。';
+        const output = parseMarkdownKeepSource(input);
+        expect(output).toContain('<a href="https://github.com" target="_blank" class="md-link-url">https://github.com</a>');
+        expect(getPlainText(output)).toBe(input);
     });
 });

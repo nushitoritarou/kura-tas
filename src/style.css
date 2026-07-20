@@ -113,10 +113,15 @@
         .editor-container { flex: 2; display: flex; flex-direction: column; position: relative; min-height: 200px; }
         #editor, #preview {
             flex: 1; padding: 15px; width: 100%; border: none; outline: none;
-            background: var(--background); line-height: 1.6; font-size: 15px;
+            background: var(--background); line-height: 1.6; font-size: 14px;
+            font-family: var(--font-mono);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            box-sizing: border-box;
         }
-        #editor { font-family: var(--font-mono); resize: none; }
-        #preview { overflow-y: auto; display: none; }
+        #editor { resize: none; }
+        #preview { overflow-y: auto; display: none; cursor: text; }
         #preview.active { display: block; }
         
         .link-container { flex: 1; border-top: 1px solid var(--border); padding: 10px; overflow-y: auto; }
@@ -172,13 +177,95 @@
         }
         .day-checkbox:checked + .day-label { background: var(--primary); color: white; border-color: var(--primary); }
         
-        /* Markdown Preview Styles */
-        #preview h1, #preview h2 { color: var(--destructive); border-bottom: 1px solid var(--border); margin: 20px 0 10px; padding-bottom: 5px; }
-        #preview code { background: var(--secondary); color: #AB6526; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; font-family: var(--font-mono); }
-        #preview pre { background: #F5F5F5; padding: 10px; border: 1px solid var(--border); border-radius: 4px; overflow-x: auto; margin: 10px 0; }
-        #preview pre code { background: transparent; padding: 0; color: var(--foreground); }
-        #preview a { color: var(--primary); text-decoration: none; }
-        #preview a:hover { text-decoration: underline; }
+        /* --- Markdown Keep-Source Highlight Styles --- */
+        .preview-placeholder {
+            color: var(--border);
+            opacity: 0.6;
+            font-style: italic;
+        }
+        .md-marker {
+            opacity: 0.35;
+        }
+        .md-h1, .md-h2, .md-h3 {
+            font-weight: bold;
+            color: var(--destructive);
+        }
+        .md-bold {
+            font-weight: bold;
+            color: var(--foreground);
+        }
+        .md-italic {
+            font-style: italic;
+        }
+        .md-inline-code {
+            background: var(--secondary);
+            color: #AB6526;
+            padding: 0;
+            border-radius: 3px;
+        }
+        .md-bullet {
+            color: var(--primary);
+            font-weight: bold;
+        }
+        .md-link-bracket {
+            opacity: 0.35;
+        }
+        .md-link-text {
+            color: var(--foreground);
+            font-weight: 500;
+        }
+        .md-link-url {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+        .md-link-url:hover {
+            color: var(--ring);
+        }
+
+        /* コードブロックコピーボタンとコンテナ */
+        .md-codeblock-container {
+            position: relative;
+            background: rgba(120, 120, 120, 0.08);
+            box-shadow: inset 3px 0 0 var(--border); /* inset shadow instead of physical border to prevent subpixel desync */
+            padding: 0 15px; /* padding-left: 15px to align text precisely */
+            margin-left: -15px;
+            margin-right: -15px;
+            display: inline-block;
+            width: calc(100% + 30px);
+            vertical-align: top;
+            box-sizing: border-box;
+        }
+        .md-code-fence {
+            color: var(--ring);
+            opacity: 0.7;
+        }
+        .md-code-line {
+            color: var(--foreground);
+            display: block;
+        }
+        .btn-copy-code {
+            position: absolute;
+            top: 2px;
+            right: 5px;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            color: var(--foreground);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease, background 0.2s ease;
+            pointer-events: auto;
+            z-index: 10;
+        }
+        .md-codeblock-container:hover .btn-copy-code {
+            opacity: 0.85;
+        }
+        .btn-copy-code:hover {
+            background: var(--accent);
+            opacity: 1 !important;
+        }
 
         .hidden { display: none !important; }
 
