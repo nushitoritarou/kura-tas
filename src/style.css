@@ -177,6 +177,18 @@
         }
         .day-checkbox:checked + .day-label { background: var(--primary); color: white; border-color: var(--primary); }
         
+        /* --- HTML Preview Styles --- */
+        blockquote {
+            border-left: 3px solid var(--ring);
+            padding-left: 10px;
+            margin: 8px 0;
+            color: var(--muted-foreground);
+        }
+        del {
+            color: var(--muted-foreground);
+            text-decoration: line-through;
+        }
+
         /* --- Markdown Keep-Source Highlight Styles --- */
         .preview-placeholder {
             color: var(--border);
@@ -196,6 +208,15 @@
         }
         .md-italic {
             font-style: italic;
+        }
+        .md-blockquote {
+            color: var(--ring);
+            opacity: 0.8;
+            font-style: italic;
+        }
+        .md-strikethrough {
+            text-decoration: line-through;
+            color: var(--muted-foreground);
         }
         .md-inline-code {
             background: var(--secondary);
