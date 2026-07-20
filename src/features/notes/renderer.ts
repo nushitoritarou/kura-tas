@@ -1,15 +1,29 @@
 import { Note } from '@/types';
-import { getToggleBtnLabel, createPanelTitle, parseToHtml } from './ui';
+import { createPanelTitle, parseToHtml, getDisplayTitle } from './ui';
 import { el } from '@/core/el';
 
 /** Note オブジェクトを画面に反映する */
-export function renderNoteArea(note: Note, isEditMode: boolean): void {
-    const { editor, preview, panelTitle, btnToggleView } = el.notes;
+export function renderNoteArea(note: Note, isEditMode: boolean, taskText?: string, routineId?: string): void {
+    const { editor, preview, panelTitle, btnPromote } = el.notes;
 
-    editor.value = note.body;
-    preview.innerHTML = parseToHtml(note.body);
-    panelTitle.textContent = createPanelTitle(note.title, note.type);
-    btnToggleView.textContent = getToggleBtnLabel(isEditMode);
+    if (editor.value !== note.body) {
+        editor.value = note.body;
+    }
+    const parsedHtml = parseToHtml(note.body);
+    preview.innerHTML = parsedHtml || '<span class="preview-placeholder">タスクを選択してメモを入力...</span>';
+    
+    const displayTitle = getDisplayTitle(note.type, taskText, note.date);
+    panelTitle.textContent = createPanelTitle(displayTitle, note.type);
+
+    if (btnPromote) {
+        if (routineId) {
+            btnPromote.style.display = 'inline-block';
+            btnPromote.dataset.routineId = routineId;
+        } else {
+            btnPromote.style.display = 'none';
+            delete btnPromote.dataset.routineId;
+        }
+    }
 
     editor.style.display = isEditMode ? 'block' : 'none';
     if (isEditMode) {

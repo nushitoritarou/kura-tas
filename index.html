@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kura-Tas v2.8 - Sakura Edition</title>
+    <title>Kura-Tas</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg width='21' height='21' viewBox='0 0 21 21' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0.500137 4.53851L2.50014 3.73851M20.5001 4.53851L18.5001 3.73851M2.50014 3.73851L10.5001 0.538513L18.5001 3.73851M2.50014 3.73851V19.5385H18.5001V3.73851M8.50014 5.53851H12.5001V8.53851H8.50014V5.53851Z' stroke='%23303030' stroke-linecap='round'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="./src/style.css">
 </head>
@@ -17,10 +17,9 @@
                     <path d="M0.500137 4.53851L2.50014 3.73851M20.5001 4.53851L18.5001 3.73851M2.50014 3.73851L10.5001 0.538513L18.5001 3.73851M2.50014 3.73851V19.5385H18.5001V3.73851M8.50014 5.53851H12.5001V8.53851H8.50014V5.53851Z" stroke="currentColor" stroke-linecap="round"/>
                 </svg>
             </div>
-            <h1 style="color:var(--destructive); margin-top:0;">Kura-Tas v2.8</h1>
-            <p style="color:var(--ring);">Sakura Edition</p>
+            <h1 style="color:var(--destructive); margin-top:0;">Kura-Tas</h1>
             <div style="font-size: 11px; color: var(--muted-foreground); margin-bottom: 20px;">
-                <span class="app-version">Version: --</span>
+                <span class="app-version">v--</span>
             </div>
             <button class="btn btn-primary" id="btn-setup" style="padding:15px 40px; font-size:1.1rem;">ディレクトリを開く</button>
             <div id="resume-container" class="hidden">
@@ -43,8 +42,11 @@
             <h2>Navigation</h2>
             <div class="nav-item" id="nav-today">🏠 今日</div>
             <div class="nav-item" id="nav-calendar">📅 カレンダー (WIP)</div>
-            <div class="nav-item" id="nav-periodic">⚙ 定期タスク</div>
+            <div class="nav-item" id="nav-routine">⚙ 定型タスク</div>
             <div class="nav-item" id="nav-import">📥 タスク読込 (AI連携)</div>
+            <div class="nav-item" id="nav-holidays">📅 休日設定</div>
+            <div class="nav-item" id="nav-shortcuts" style="font-size: 11px; opacity: 0.6; margin-top: 10px;">⌨ ショートカット (Shift+?)</div>
+
 
             <div class="inbox-area">
                 <h2>Inbox (Stock)</h2>
@@ -77,8 +79,8 @@
             <div class="panel-header" id="panel-title">Knowledge Context</div>
             <div class="editor-container">
                 <div class="toolbar" style="padding:5px; background: var(--background);">
-                    <button class="btn" id="btn-toggle-view" title="Ctrl+P">👀 プレビュー (Ctrl+P)</button>
                     <button class="btn" id="btn-save-note" title="Ctrl+S">💾 保存 (Ctrl+S)</button>
+                    <button class="btn" id="btn-promote-note" style="display:none;" title="このノートの内容を定期タスクのテンプレートとして登録/更新します">👑 テンプレートに昇格</button>
                     <span id="save-status" style="font-size:10px; color:var(--done); margin-left:auto;"></span>
                 </div>
                 <textarea id="editor" spellcheck="false" placeholder="タスクを選択してメモを入力..."></textarea>
@@ -105,14 +107,23 @@
     <div id="modal-import" class="modal">
         <div class="modal-content">
             <h3>タスクを一括読込 (AI連携)</h3>
-            <div style="background:var(--secondary); padding:10px; font-size:11px; border:1px solid var(--border); position:relative; margin-bottom:10px;">
-                <pre id="import-sample">[
-  {"text": "要件定義の確認", "deadline": "2026-05-10"},
-  {"text": "API設計のレビュー", "delegated": true}
-]</pre>
+            <!-- Import Sample Area (hidden by default) -->
+            <div id="import-sample-container" style="display:none; background:var(--secondary); padding:10px; font-size:11px; border:1px solid var(--border); position:relative; margin-bottom:10px;">
+                <pre id="import-sample" style="margin:0; font-family:var(--font-mono);"></pre>
                 <button class="btn" id="btn-copy-sample" style="position:absolute; top:5px; right:5px; font-size:10px;">コピー</button>
             </div>
-            <textarea id="import-area" style="width:100%; height:150px; font-family:var(--font-mono); padding:10px; border:1px solid var(--border);" placeholder="ここにAIの回答を貼り付け..."></textarea>
+            <div style="margin-bottom:10px; display:flex; align-items:center; gap:8px; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                    <label for="import-format" style="font-size:12px; color:var(--muted-foreground); white-space:nowrap;">入力形式:</label>
+                    <select id="import-format" class="inbox-input" style="flex:1; margin:0; padding:4px;">
+                        <option value="auto">自動判別 (Auto-detect)</option>
+                        <option value="json">JSON形式 (JSON Array)</option>
+                        <option value="text">改行区切りテキスト (Plain Text / Line-by-line)</option>
+                    </select>
+                </div>
+                <button class="btn" id="btn-toggle-sample" style="font-size:12px; padding:4px 8px; white-space:nowrap;">💡 サンプル</button>
+            </div>
+            <textarea id="import-area" style="width:100%; height:150px; font-family:var(--font-mono); padding:10px; border:1px solid var(--border);" placeholder="ここにAIの回答（JSON）や、1行1タスクのテキストを貼り付け..."></textarea>
             <div style="margin-top:15px; text-align:right;">
                 <button class="btn" id="btn-close-import">キャンセル</button>
                 <button class="btn btn-primary" id="btn-do-import">インポート</button>
@@ -120,18 +131,31 @@
         </div>
     </div>
 
-    <!-- Modal Periodic -->
-    <div id="modal-periodic" class="modal">
+    <!-- Modal Routine -->
+    <div id="modal-routine" class="modal">
         <div class="modal-content">
-            <h3>⚙ 定期タスク管理 (Master)</h3>
-            <div class="periodic-list" id="periodic-list">
+            <h3>⚙ 定型タスク管理 (Master)</h3>
+            <div class="routine-list" id="routine-list">
                 <!-- Items populated by JS -->
             </div>
             
             <div style="border-top: 1px solid var(--border); padding-top: 15px;">
-                <h4 id="periodic-modal-title" style="margin: 0 0 10px; font-size: 13px;">新規登録</h4>
-                <input type="text" id="periodic-new-text" class="inbox-input" placeholder="タスク名を入力...">
-                <div class="day-chip-container">
+                <h4 id="routine-modal-title" style="margin: 0 0 10px; font-size: 13px;">新規登録</h4>
+                <input type="text" id="routine-new-text" class="inbox-input" placeholder="タスク名を入力...">
+                
+                <!-- スケジュール選択 -->
+                <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                    <label for="routine-schedule-type" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">スケジュール:</label>
+                    <select id="routine-schedule-type" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                        <option value="weekly">毎週 (Weekly)</option>
+                        <option value="interval">週おき (Interval)</option>
+                        <option value="monthly-day">毎月日付 (Monthly Day)</option>
+                        <option value="monthly-weekday">毎月第N曜日 (Monthly Weekday)</option>
+                        <option value="none">手動 (None)</option>
+                    </select>
+                </div>
+
+                <div id="routine-days-container" class="day-chip-container" style="margin-top: 10px;">
                     <input type="checkbox" id="day-0" class="day-checkbox" value="0"><label for="day-0" class="day-label">日</label>
                     <input type="checkbox" id="day-1" class="day-checkbox" value="1"><label for="day-1" class="day-label">月</label>
                     <input type="checkbox" id="day-2" class="day-checkbox" value="2"><label for="day-2" class="day-label">火</label>
@@ -140,10 +164,248 @@
                     <input type="checkbox" id="day-5" class="day-checkbox" value="5"><label for="day-5" class="day-label">金</label>
                     <input type="checkbox" id="day-6" class="day-checkbox" value="6"><label for="day-6" class="day-label">土</label>
                 </div>
-                <div style="margin-top:15px; text-align:right;">
-                    <button class="btn" id="btn-close-periodic">閉じる</button>
-                    <button class="btn btn-primary" id="btn-add-periodic">登録する</button>
+
+                <!-- 週おきオプションコンテナ -->
+                <div id="routine-interval-container" style="margin-top: 10px; display: none; align-items: center; gap: 8px;">
+                    <label for="routine-interval-weeks" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">間隔 (週):</label>
+                    <input type="number" id="routine-interval-weeks" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;" min="1" value="2">
+                    <label for="routine-base-date" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">基準日:</label>
+                    <input type="date" id="routine-base-date" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
                 </div>
+
+                <!-- 毎月日付オプションコンテナ -->
+                <div id="routine-monthly-day-container" style="margin-top: 10px; display: none; align-items: center; gap: 8px;">
+                    <label for="routine-monthly-day" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">指定日:</label>
+                    <select id="routine-monthly-day" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                        <option value="1">1日</option>
+                        <option value="2">2日</option>
+                        <option value="3">3日</option>
+                        <option value="4">4日</option>
+                        <option value="5">5日</option>
+                        <option value="6">6日</option>
+                        <option value="7">7日</option>
+                        <option value="8">8日</option>
+                        <option value="9">9日</option>
+                        <option value="10">10日</option>
+                        <option value="11">11日</option>
+                        <option value="12">12日</option>
+                        <option value="13">13日</option>
+                        <option value="14">14日</option>
+                        <option value="15">15日</option>
+                        <option value="16">16日</option>
+                        <option value="17">17日</option>
+                        <option value="18">18日</option>
+                        <option value="19">19日</option>
+                        <option value="20">20日</option>
+                        <option value="21">21日</option>
+                        <option value="22">22日</option>
+                        <option value="23">23日</option>
+                        <option value="24">24日</option>
+                        <option value="25">25日</option>
+                        <option value="26">26日</option>
+                        <option value="27">27日</option>
+                        <option value="28">28日</option>
+                        <option value="29">29日</option>
+                        <option value="30">30日</option>
+                        <option value="31">31日</option>
+                        <option value="last">月末</option>
+                    </select>
+                </div>
+
+                <!-- 毎月第N曜日オプションコンテナ -->
+                <div id="routine-monthly-weekday-container" style="margin-top: 10px; display: none; align-items: center; gap: 8px;">
+                    <label for="routine-week-index" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">第N週曜日:</label>
+                    <select id="routine-week-index" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                        <option value="1">第1</option>
+                        <option value="2">第2</option>
+                        <option value="3">第3</option>
+                        <option value="4">第4</option>
+                        <option value="5">第5</option>
+                        <option value="last">最終</option>
+                    </select>
+                </div>
+                <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                    <label for="routine-holiday-adjustment" style="font-size: 12px; color: var(--muted-foreground); white-space: nowrap;">休日調整:</label>
+                    <select id="routine-holiday-adjustment" class="inbox-input" style="flex: 1; margin: 0; padding: 4px;">
+                        <option value="skip">スキップ</option>
+                        <option value="before">前営業日に移動</option>
+                        <option value="after">後営業日に移動</option>
+                    </select>
+                </div>
+                <div style="margin-top:15px; text-align:right;">
+                    <button class="btn" id="btn-close-routine">閉じる</button>
+                    <button class="btn btn-primary" id="btn-add-routine">登録する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Holidays -->
+    <div id="modal-holidays" class="modal">
+        <div class="modal-content">
+            <h3>📅 休日・営業日設定</h3>
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px; font-size: 13px;">営業日の曜日</h4>
+                <div class="day-chip-container" id="holiday-workdays-container">
+                    <input type="checkbox" id="workday-0" class="workday-checkbox" value="0"><label for="workday-0" class="day-label">日</label>
+                    <input type="checkbox" id="workday-1" class="workday-checkbox" value="1"><label for="workday-1" class="day-label">月</label>
+                    <input type="checkbox" id="workday-2" class="workday-checkbox" value="2"><label for="workday-2" class="day-label">火</label>
+                    <input type="checkbox" id="workday-3" class="workday-checkbox" value="3"><label for="workday-3" class="day-label">水</label>
+                    <input type="checkbox" id="workday-4" class="workday-checkbox" value="4"><label for="workday-4" class="day-label">木</label>
+                    <input type="checkbox" id="workday-5" class="workday-checkbox" value="5"><label for="workday-5" class="day-label">金</label>
+                    <input type="checkbox" id="workday-6" class="workday-checkbox" value="6"><label for="workday-6" class="day-label">土</label>
+                </div>
+            </div>
+            
+            <div style="border-top: 1px solid var(--border); padding-top: 15px;">
+                <h4 style="margin: 0 0 10px; font-size: 13px;">特定の休日・祝日の日付</h4>
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="date" id="holiday-date-input" class="inbox-input" style="flex:1; margin:0;">
+                    <button class="btn btn-primary" id="btn-add-holiday-date" style="padding:2px 15px;">追加</button>
+                </div>
+                <div id="holiday-list" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); padding: 5px; background: var(--secondary);">
+                    <!-- Items populated by JS -->
+                </div>
+            </div>
+            
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn btn-primary" id="btn-close-holidays">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Keyboard Shortcuts -->
+    <div id="modal-shortcuts" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>⌨ キーボードショートカット一覧</h3>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                            <th style="padding: 6px;">操作</th>
+                            <th style="padding: 6px;">キー</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold;">ヘルプの表示/非表示</td>
+                            <td style="padding: 6px;"><kbd>?</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold; color: var(--ring);">【ナビゲーション】</td>
+                            <td style="padding: 6px;"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">下のタスクを選択</td>
+                            <td style="padding: 6px;"><kbd>j</kbd> / <kbd>↓</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">上のタスクを選択</td>
+                            <td style="padding: 6px;"><kbd>k</kbd> / <kbd>↑</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">最初のタスクを選択</td>
+                            <td style="padding: 6px;"><kbd>g</kbd> <kbd>g</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">最後のタスクを選択</td>
+                            <td style="padding: 6px;"><kbd>G</kbd> (Shift+g)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">前の日付へ移動</td>
+                            <td style="padding: 6px;"><kbd>h</kbd> / <kbd>←</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">次の日付へ移動</td>
+                            <td style="padding: 6px;"><kbd>l</kbd> / <kbd>→</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">今日の日付へ移動</td>
+                            <td style="padding: 6px;"><kbd>Home</kbd> / <kbd>0</kbd> / <kbd>^</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold; color: var(--ring);">【タスク操作】</td>
+                            <td style="padding: 6px;"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスク完了/未完了トグル</td>
+                            <td style="padding: 6px;"><kbd>x</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">他者依頼（Delegated）トグル</td>
+                            <td style="padding: 6px;"><kbd>w</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスクの削除（即削除）</td>
+                            <td style="padding: 6px;"><kbd>d</kbd> <kbd>d</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスク名の編集</td>
+                            <td style="padding: 6px;"><kbd>a</kbd> / <kbd>A</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスクを明日（翌営業日）に移動</td>
+                            <td style="padding: 6px;"><kbd>m</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">クイックタスク作成画面表示</td>
+                            <td style="padding: 6px;"><kbd>o</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold; color: var(--ring);">【モード切り替え】</td>
+                            <td style="padding: 6px;"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">Inbox入力欄にフォーカス (新規タスク用)</td>
+                            <td style="padding: 6px;"><kbd>i</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスクメモ編集にフォーカス</td>
+                            <td style="padding: 6px;"><kbd>e</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">入力フォーカスを外す（ノーマルモード）</td>
+                            <td style="padding: 6px;"><kbd>Esc</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px; font-weight: bold; color: var(--ring);">【その他】</td>
+                            <td style="padding: 6px;"></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">操作を元に戻す (Undo)</td>
+                            <td style="padding: 6px;"><kbd>u</kbd> / <kbd>Ctrl+z</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">操作をやり直す (Redo)</td>
+                            <td style="padding: 6px;"><kbd>Ctrl+y</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">メモ保存</td>
+                            <td style="padding: 6px;"><kbd>Ctrl+s</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">メモのプレビュー/編集切り替え</td>
+                            <td style="padding: 6px;"><kbd>Ctrl+p</kbd></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn btn-primary" id="btn-close-shortcuts">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Quick Task Add -->
+    <div id="modal-quick-add" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>⚡ クイックタスク追加</h3>
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="quick-add-input" class="inbox-input" placeholder="タスク名を入力..." style="width: 100%; box-sizing: border-box; margin: 0;">
+            </div>
+            <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" id="btn-close-quick-add">キャンセル</button>
+                <button class="btn btn-primary" id="btn-do-quick-add">追加</button>
             </div>
         </div>
     </div>

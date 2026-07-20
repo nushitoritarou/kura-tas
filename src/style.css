@@ -1,4 +1,4 @@
-        /* --- Color Palette (Sakura Editor Inspired) --- */
+        /* --- Default Color Palette (Sakura Editor Inspired) --- */
         :root {
             --background: #FFFBF0;
             --foreground: #000000;       /* サクラ背景 */
@@ -86,7 +86,17 @@
             margin-bottom: 2px; border: 1px solid transparent; cursor: pointer;
         }
         .task-item:hover { background: var(--accent); }
-        .task-item.active { background: var(--selection); border-color: var(--primary); }
+        .task-item.active {
+            background: rgba(75, 131, 205, 0.15);
+            border-color: var(--ring);
+            outline: 1px solid var(--ring);
+        }
+        body.insert-mode .task-item.active {
+            background: var(--secondary);
+            border-color: var(--border);
+            outline: none;
+            opacity: 0.8;
+        }
         .task-item.done { color: var(--done); }
         .task-item.delegated { border-left: 4px solid var(--destructive); }
         
@@ -103,10 +113,15 @@
         .editor-container { flex: 2; display: flex; flex-direction: column; position: relative; min-height: 200px; }
         #editor, #preview {
             flex: 1; padding: 15px; width: 100%; border: none; outline: none;
-            background: var(--background); line-height: 1.6; font-size: 15px;
+            background: var(--background); line-height: 1.6; font-size: 14px;
+            font-family: var(--font-mono);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            box-sizing: border-box;
         }
-        #editor { font-family: var(--font-mono); resize: none; }
-        #preview { overflow-y: auto; display: none; }
+        #editor { resize: none; }
+        #preview { overflow-y: auto; display: none; cursor: text; }
         #preview.active { display: block; }
         
         .link-container { flex: 1; border-top: 1px solid var(--border); padding: 10px; overflow-y: auto; }
@@ -145,15 +160,15 @@
             position: relative; /* 子要素の配置基準 */
         }
 
-        /* Periodic Task UI Styles */
-        .periodic-list { max-height: 250px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border); }
-        .periodic-item { 
+        /* Routine Task UI Styles */
+        .routine-list { max-height: 250px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border); }
+        .routine-item { 
             display: flex; align-items: center; padding: 8px; border-bottom: 1px solid var(--border);
             font-size: 13px; gap: 10px;
         }
-        .periodic-item:last-child { border-bottom: none; }
-        .periodic-info { flex: 1; }
-        .periodic-days { font-size: 11px; color: var(--ring); margin-top: 2px; }
+        .routine-item:last-child { border-bottom: none; }
+        .routine-info { flex: 1; }
+        .routine-days { font-size: 11px; color: var(--ring); margin-top: 2px; }
         .day-chip-container { display: flex; gap: 3px; margin-top: 10px; }
         .day-checkbox { display: none; }
         .day-label { 
@@ -162,18 +177,137 @@
         }
         .day-checkbox:checked + .day-label { background: var(--primary); color: white; border-color: var(--primary); }
         
-        /* Markdown Preview Styles */
-        #preview h1, #preview h2 { color: var(--destructive); border-bottom: 1px solid var(--border); margin: 20px 0 10px; padding-bottom: 5px; }
-        #preview code { background: var(--secondary); color: #AB6526; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; font-family: var(--font-mono); }
-        #preview pre { background: #F5F5F5; padding: 10px; border: 1px solid var(--border); border-radius: 4px; overflow-x: auto; margin: 10px 0; }
-        #preview pre code { background: transparent; padding: 0; color: var(--foreground); }
-        #preview a { color: var(--primary); text-decoration: none; }
-        #preview a:hover { text-decoration: underline; }
+        /* --- HTML Preview Styles --- */
+        blockquote {
+            border-left: 3px solid var(--ring);
+            padding-left: 10px;
+            margin: 8px 0;
+            color: var(--muted-foreground);
+        }
+        del {
+            color: var(--muted-foreground);
+            text-decoration: line-through;
+        }
+
+        /* --- Markdown Keep-Source Highlight Styles --- */
+        .preview-placeholder {
+            color: var(--border);
+            opacity: 0.6;
+            font-style: italic;
+        }
+        .md-marker {
+            opacity: 0.35;
+        }
+        .md-h1, .md-h2, .md-h3 {
+            font-weight: bold;
+            color: var(--destructive);
+        }
+        .md-bold {
+            font-weight: bold;
+            color: var(--foreground);
+        }
+        .md-italic {
+            font-style: italic;
+        }
+        .md-blockquote {
+            color: var(--ring);
+            opacity: 0.8;
+            font-style: italic;
+        }
+        .md-strikethrough {
+            text-decoration: line-through;
+            color: var(--muted-foreground);
+        }
+        .md-inline-code {
+            background: var(--secondary);
+            color: #AB6526;
+            padding: 0;
+            border-radius: 3px;
+        }
+        .md-bullet {
+            color: var(--primary);
+            font-weight: bold;
+        }
+        .md-link-bracket {
+            opacity: 0.35;
+        }
+        .md-link-text {
+            color: var(--foreground);
+            font-weight: 500;
+        }
+        .md-link-url {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+        .md-link-url:hover {
+            color: var(--ring);
+        }
+
+        /* コードブロックコピーボタンとコンテナ */
+        .md-codeblock-container {
+            position: relative;
+            background: rgba(120, 120, 120, 0.08);
+            box-shadow: inset 3px 0 0 var(--border); /* inset shadow instead of physical border to prevent subpixel desync */
+            padding: 0 15px; /* padding-left: 15px to align text precisely */
+            margin-left: -15px;
+            margin-right: -15px;
+            display: inline-block;
+            width: calc(100% + 30px);
+            vertical-align: top;
+            box-sizing: border-box;
+        }
+        .md-code-fence {
+            color: var(--ring);
+            opacity: 0.7;
+        }
+        .md-code-line {
+            color: var(--foreground);
+            display: block;
+        }
+        .btn-copy-code {
+            position: absolute;
+            top: 2px;
+            right: 5px;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            color: var(--foreground);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease, background 0.2s ease;
+            pointer-events: auto;
+            z-index: 10;
+        }
+        .md-codeblock-container:hover .btn-copy-code {
+            opacity: 0.85;
+        }
+        .btn-copy-code:hover {
+            background: var(--accent);
+            opacity: 1 !important;
+        }
 
         .hidden { display: none !important; }
 
-        /* Scrollbar Sakura Style */
+        /* Scrollbar Style (Default Theme) */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--secondary); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--ring); }
+
+        /* kbd tag styling for keyboard shortcuts modal */
+        kbd {
+            background-color: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+            color: var(--foreground);
+            display: inline-block;
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 1;
+            padding: 3px 5px;
+            white-space: nowrap;
+            font-family: var(--font-mono);
+        }
