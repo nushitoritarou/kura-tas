@@ -26,6 +26,14 @@ export function wireInbox(ctx: WiringContext): void {
     el.inbox.input.onkeypress = (e) => {
         if (e.key === 'Enter') handleAddInbox();
     };
+    el.inbox.input.onkeydown = (e) => {
+        if (e.isComposing) return;
+        if (e.key === 'Escape') {
+            inboxRenderer.clearInput();
+            el.inbox.input.blur();
+            e.stopPropagation();
+        }
+    };
     el.inbox.input.onblur = handleAddInbox;
 
     el.inbox.list.onclick = async (e) => {

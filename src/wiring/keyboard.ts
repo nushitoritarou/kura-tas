@@ -45,10 +45,18 @@ export function wireKeyboard(ctx: WiringContext): void {
     window.onkeydown = async (e) => {
         // インサートモード（フォーカス中）でも動作する Esc キーのハンドリング
         if (e.key === 'Escape') {
+            if (e.isComposing) return; // IME入力中のEscapeは無視
             lastKey = ''; // バッファクリア
             const active = document.activeElement;
             if (active && (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement)) {
                 active.blur();
+                if (active instanceof HTMLInputElement && active.type === 'date') {
+                    setTimeout(() => {
+                        if (document.body.contains(active) && document.activeElement === active) {
+                            active.blur();
+                        }
+                    }, 0);
+                }
                 e.preventDefault();
                 return;
             }
