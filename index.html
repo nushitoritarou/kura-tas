@@ -86,6 +86,7 @@
             </div>
             <div id="task-op-toolbar" style="padding: 5px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 5px;">
                 <button class="btn" id="btn-carry-over" title="過去の未完了タスクを今日に引き継ぎます" style="font-size: 11px;">📥 過去の未完了を引き継ぐ</button>
+                <button class="btn" id="btn-sort-tasks" title="タスクを完了状態、他者依頼、名前順でソートします (S)" style="font-size: 11px;">🔃 タスクをソート</button>
             </div>
             <div class="task-list" id="task-list"></div>
         </main>
@@ -346,6 +347,10 @@
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 6px;">タスク完了/未完了トグル</td>
                             <td style="padding: 6px;"><kbd>x</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスクをソート</td>
+                            <td style="padding: 6px;"><kbd>S</kbd> (Shift+s)</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 6px;">他者依頼（Delegated）トグル</td>

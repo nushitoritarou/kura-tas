@@ -2,6 +2,8 @@
  * タスクに関する純粋な計算ロジック
  */
 
+import { Task } from '@/types';
+
 /**
  * 重複しないタスク名を生成する
  * carryOver時に使用する。
@@ -29,4 +31,27 @@ export function generateUniqueTaskName(baseName: string, dateStr: string, existi
     }
 
     return finalTitle;
+}
+
+/**
+ * タスクリストをソートする
+ * 1. 完了状態 (done: false が上)
+ * 2. 他者依頼 (delegated: false/undefined が上)
+ * 3. タスク名 (名前の昇順)
+ */
+export function sortTasks(tasks: Task[]): Task[] {
+    return [...tasks].sort((a, b) => {
+        // 1. 完了状態の比較
+        if (a.done !== b.done) {
+            return a.done ? 1 : -1;
+        }
+        // 2. 他者依頼状態の比較
+        const aDel = !!a.delegated;
+        const bDel = !!b.delegated;
+        if (aDel !== bDel) {
+            return aDel ? 1 : -1;
+        }
+        // 3. タスク名の比較
+        return a.text.localeCompare(b.text, 'ja');
+    });
 }

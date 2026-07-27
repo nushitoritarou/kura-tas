@@ -173,6 +173,23 @@ export class TaskStore extends DirectoryStore<Task[]> {
         });
     }
 
+    async reorderTasksForDate(date: string, sortedTasks: Task[]): Promise<void> {
+        const invalidTasks = sortedTasks.filter(t => t.date !== date);
+        if (invalidTasks.length > 0) {
+            throw new Error(`[TaskStore] Invalid tasks found for date ${date}: ${JSON.stringify(invalidTasks)}`);
+        }
+
+        await this.getTasksFor(date);
+        return await this.enqueue(async (currentState) => {
+            const otherTasks = currentState.filter(t => t.date !== date);
+            const nextState = [...otherTasks, ...sortedTasks];
+
+            await storage.writeJson(`${this.dirName}/${date}.json`, sortedTasks);
+
+            return { nextState, result: undefined };
+        });
+    }
+
     getAvailableDates(): string[] {
         return Array.from(this.availableDates).sort();
     }
