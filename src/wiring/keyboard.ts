@@ -177,6 +177,12 @@ export function wireKeyboard(ctx: WiringContext): void {
                     ctx.store.ui.update({ activeTaskId: dayTasks[dayTasks.length - 1].id });
                 }, { recordHistory: false });
             }
+        } else if (e.key === 'S') {
+            e.preventDefault();
+            const currentDate = ctx.store.ui.getState().currentDate;
+            await ctx.dispatchAction(async () => {
+                await tasksLogic.sortTasksForDate(currentDate, ctx.store);
+            });
         } else if (e.key === 'h' || e.key === 'ArrowLeft') {
             e.preventDefault();
             await ctx.dispatchAction(async () => {

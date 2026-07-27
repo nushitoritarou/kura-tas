@@ -358,5 +358,31 @@ describe('tasks logic', () => {
             expect(logic.getTaskIdAfterRemoval(mockTasks, 'task-3')).toBe('task-2');
         });
     });
+
+    describe('sortTasksForDate', () => {
+        it('指定日のタスクをソートして store.reorderTasksForDate を呼び出すこと', async () => {
+            const date = '2024-06-01';
+            const tasks: Task[] = [
+                { id: '1', text: 'B_task', done: true, delegated: false, originalDate: date, date },
+                { id: '2', text: 'A_task', done: false, delegated: false, originalDate: date, date },
+                { id: '3', text: 'C_task', done: false, delegated: true, originalDate: date, date }
+            ];
+            vi.mocked(tasksStore.getTasksFor).mockResolvedValue(tasks);
+
+            await logic.sortTasksForDate(date, deps);
+
+            expect(tasksStore.reorderTasksForDate).toHaveBeenCalledWith(date, [
+                expect.objectContaining({ id: '2' }),
+                expect.objectContaining({ id: '3' }),
+                expect.objectContaining({ id: '1' })
+            ]);
+        });
+
+        it('指定日のタスクが0件の場合は何もしないこと', async () => {
+            vi.mocked(tasksStore.getTasksFor).mockResolvedValue([]);
+            await logic.sortTasksForDate('2024-06-01', deps);
+            expect(tasksStore.reorderTasksForDate).not.toHaveBeenCalled();
+        });
+    });
 });
 
