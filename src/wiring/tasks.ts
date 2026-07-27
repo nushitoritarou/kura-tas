@@ -143,6 +143,23 @@ export function wireTasks(ctx: WiringContext): void {
         };
     }
 
+    // ソート
+    const btnSortTasks = el.tasks.btnSortTasks;
+    if (btnSortTasks) {
+        btnSortTasks.onclick = async () => {
+            if (isProcessing) return;
+            const uiState = ctx.store.ui.getState();
+            isProcessing = true;
+            try {
+                await ctx.dispatchAction(async () => {
+                    await tasksLogic.sortTasksForDate(uiState.currentDate, ctx.store);
+                });
+            } finally {
+                isProcessing = false;
+            }
+        };
+    }
+
     // インポート
     const updateImportSample = () => {
         const format = el.modals.import.format.value;

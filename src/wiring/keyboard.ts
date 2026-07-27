@@ -45,10 +45,46 @@ export function wireKeyboard(ctx: WiringContext): void {
     window.onkeydown = async (e) => {
         // インサートモード（フォーカス中）でも動作する Esc キーのハンドリング
         if (e.key === 'Escape') {
+            if (e.isComposing) return; // IME入力中のEscapeは無視
             lastKey = ''; // バッファクリア
             const active = document.activeElement;
+
             if (active && (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement)) {
-                active.blur();
+                // 開いているモーダルがあるか判定し、そのルートにフォーカスを移す
+                let targetToFocus: HTMLElement | null = null;
+                if (el.modals.routine.root.style.display === 'flex') {
+                    targetToFocus = el.modals.routine.root;
+                } else if (el.modals.holidays.root.style.display === 'flex') {
+                    targetToFocus = el.modals.holidays.root;
+                } else if (el.modals.import.root.style.display === 'flex' || el.modals.import.root.style.display === 'block') {
+                    targetToFocus = el.modals.import.root;
+                } else if (el.modals.quickAdd.root.style.display === 'flex') {
+                    targetToFocus = el.modals.quickAdd.root;
+                } else if (globalRenderer.isShortcutsModalShown()) {
+                    targetToFocus = el.modals.shortcuts.root;
+                }
+
+                if (targetToFocus) {
+                    targetToFocus.focus();
+                } else {
+                    active.blur();
+                    if (typeof (document.body as any).focus === 'function') {
+                        document.body.focus();
+                    }
+                }
+
+                if (active instanceof HTMLInputElement && active.type === 'date') {
+                    setTimeout(() => {
+                        if (document.body.contains(active) && (document.activeElement === active || document.activeElement === document.body)) {
+                            if (targetToFocus) {
+                                targetToFocus.focus();
+                            } else {
+                                active.blur();
+                                document.body.focus();
+                            }
+                        }
+                    }, 50);
+                }
                 e.preventDefault();
                 return;
             }
@@ -177,6 +213,12 @@ export function wireKeyboard(ctx: WiringContext): void {
                     ctx.store.ui.update({ activeTaskId: dayTasks[dayTasks.length - 1].id });
                 }, { recordHistory: false });
             }
+        } else if (e.key === 'S') {
+            e.preventDefault();
+            const currentDate = ctx.store.ui.getState().currentDate;
+            await ctx.dispatchAction(async () => {
+                await tasksLogic.sortTasksForDate(currentDate, ctx.store);
+            });
         } else if (e.key === 'h' || e.key === 'ArrowLeft') {
             e.preventDefault();
             await ctx.dispatchAction(async () => {

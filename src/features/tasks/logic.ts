@@ -246,4 +246,12 @@ export function getTaskIdAfterRemoval(tasks: { id: string }[], currentId: string
     return tasks[index - 1].id;
 }
 
+/** 指定日のタスクをソートして保存する */
+export async function sortTasksForDate(date: string, deps: TaskDeps): Promise<void> {
+    const dayTasks = await deps.tasks.getTasksFor(date);
+    if (dayTasks.length === 0) return;
+    const sorted = tasksEngine.sortTasks(dayTasks);
+    await deps.tasks.reorderTasksForDate(date, sorted);
+}
+
 

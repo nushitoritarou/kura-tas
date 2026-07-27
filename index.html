@@ -86,6 +86,7 @@
             </div>
             <div id="task-op-toolbar" style="padding: 5px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 5px;">
                 <button class="btn" id="btn-carry-over" title="過去の未完了タスクを今日に引き継ぎます" style="font-size: 11px;">📥 過去の未完了を引き継ぐ</button>
+                <button class="btn" id="btn-sort-tasks" title="タスクを完了状態、他者依頼、名前順でソートします (S)" style="font-size: 11px;">🔃 タスクをソート</button>
             </div>
             <div class="task-list" id="task-list"></div>
         </main>
@@ -120,7 +121,7 @@
     <div id="context-menu" class="context-menu"></div>
 
     <!-- Modal Import -->
-    <div id="modal-import" class="modal">
+    <div id="modal-import" class="modal" tabindex="-1">
         <div class="modal-content">
             <h3>タスクを一括読込 (AI連携)</h3>
             <!-- Import Sample Area (hidden by default) -->
@@ -148,7 +149,7 @@
     </div>
 
     <!-- Modal Routine -->
-    <div id="modal-routine" class="modal">
+    <div id="modal-routine" class="modal" tabindex="-1">
         <div class="modal-content">
             <h3>⚙ 定型タスク管理 (Master)</h3>
             <div class="routine-list" id="routine-list">
@@ -257,7 +258,7 @@
     </div>
 
     <!-- Modal Holidays -->
-    <div id="modal-holidays" class="modal">
+    <div id="modal-holidays" class="modal" tabindex="-1">
         <div class="modal-content">
             <h3>📅 休日・営業日設定</h3>
             <div style="margin-bottom: 20px;">
@@ -291,7 +292,7 @@
     </div>
 
     <!-- Modal Keyboard Shortcuts -->
-    <div id="modal-shortcuts" class="modal">
+    <div id="modal-shortcuts" class="modal" tabindex="-1">
         <div class="modal-content" style="max-width: 500px;">
             <h3>⌨ キーボードショートカット一覧</h3>
             <div style="max-height: 400px; overflow-y: auto;">
@@ -346,6 +347,10 @@
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 6px;">タスク完了/未完了トグル</td>
                             <td style="padding: 6px;"><kbd>x</kbd></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 6px;">タスクをソート</td>
+                            <td style="padding: 6px;"><kbd>S</kbd> (Shift+s)</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 6px;">他者依頼（Delegated）トグル</td>
@@ -413,7 +418,7 @@
     </div>
 
     <!-- Modal Quick Task Add -->
-    <div id="modal-quick-add" class="modal">
+    <div id="modal-quick-add" class="modal" tabindex="-1">
         <div class="modal-content" style="max-width: 400px;">
             <h3>⚡ クイックタスク追加</h3>
             <div style="margin-bottom: 15px;">

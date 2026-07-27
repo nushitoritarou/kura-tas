@@ -54,6 +54,7 @@ export const el = {
   tasks: {
     list: document.getElementById('task-list') as HTMLElement,
     btnCarryOver: document.getElementById('btn-carry-over') as HTMLElement,
+    btnSortTasks: document.getElementById('btn-sort-tasks') as HTMLElement,
   },
 
   notes: {
