@@ -149,7 +149,9 @@ export function wireNotes(ctx: WiringContext): void {
             const body = container?.querySelector('.md-code-body') as HTMLElement;
             if (body) {
                 try {
-                    const textToCopy = body.innerText.replace(/^\r?\n/, '');
+                    const textToCopy = body.innerText
+                        .replace(/^\r?\n/, '')
+                        .replace(/\r?\n$/, '');
                     await navigator.clipboard.writeText(textToCopy);
                     copyBtn.innerText = 'Copied!';
                     setTimeout(() => { copyBtn.innerText = 'Copy'; }, 2000);
