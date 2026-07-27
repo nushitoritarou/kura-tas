@@ -94,7 +94,7 @@ HTML 1ファイルで完結し、File System Access API を通じてローカル
 
 ### 3.5. バージョン情報・リポジトリリンクとデプロイ (Version Info & Deployment)
 - **バージョン表記の一元化**: `package.json` の `version` を正とし、ビルド時に自動で画面のバージョン情報やブラウザのタイトルに反映する。
-- **デバッグ情報**: デバッグモードが有効な場合、バージョン表記の横に Git コミットハッシュおよびビルド日時（JST）を表示する（例: `v2.0.0 (commit: abc123f, built: 2026/07/16 18:00)`）。環境変数 `VITE_COMMIT_HASH` が指定されている場合はそのハッシュ値が優先表示される。
+- **デバッグ情報**: デバッグモードが有効な場合、バージョン表記の横に Git コミットハッシュおよびビルド日時（JST）を表示する（例: `v2.0.2 (commit: abc123f, built: 2026/07/16 18:00)`）。環境変数 `VITE_COMMIT_HASH` が指定されている場合はそのハッシュ値が優先表示される。
 - **リポジトリとPagesの相互リンク**:
   - `README.md` ヘッダー部に Web App (GitHub Pages) へのリンクを記述。
   - 初期セットアップ画面（Setup Overlay）のバージョン表示横、および左サイドバーのヘッダーロゴ（`KURA-TAS`）横に GitHub リポジトリ（`https://github.com/nushitoritarou/kura-tas`）へのリンクアイコンを配置。
