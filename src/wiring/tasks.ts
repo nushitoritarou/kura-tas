@@ -56,6 +56,15 @@ export function wireTasks(ctx: WiringContext): void {
 
         globalRenderer.displayContextMenu(e.clientX, e.clientY, [
             {
+                type: 'priority',
+                currentPriority: task.priority,
+                onSelectPriority: async (priority: number) => {
+                    await ctx.dispatchAction(async () => {
+                        await tasksLogic.toggleTaskPriority(id, priority, ctx.store);
+                    });
+                }
+            },
+            {
                 label: task.delegated ? '他者依頼を解除' : '他者依頼を設定',
                 action: async () => {
                     await ctx.dispatchAction(async () => {
@@ -166,7 +175,7 @@ export function wireTasks(ctx: WiringContext): void {
         if (format === 'text') {
             el.modals.import.samplePre.textContent = `要件定義の確認\nAPI設計のレビュー`;
         } else {
-            el.modals.import.samplePre.textContent = `[\n  {"text": "要件定義の確認", "deadline": "2026-05-10"},\n  {"text": "API設計のレビュー", "delegated": true}\n]`;
+            el.modals.import.samplePre.textContent = `[\n  {"text": "要件定義の確認", "priority": 1, "deadline": "2026-05-10"},\n  {"text": "API設計のレビュー", "delegated": true}\n]`;
         }
     };
 

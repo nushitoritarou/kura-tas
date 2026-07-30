@@ -12,6 +12,14 @@ export function generateTaskListHtml(tasks: Task[], activeTaskId?: string): stri
     return tasks.map(t => generateTaskItemHtml(t, t.id === activeTaskId)).join('');
 }
 
+const PRIORITY_MAP: Record<number, string> = {
+    1: '①',
+    2: '②',
+    3: '③',
+    4: '④',
+    5: '⑤'
+};
+
 /**
  * 単一タスク項目のHTMLを生成する
  */
@@ -23,9 +31,14 @@ export function generateTaskItemHtml(task: Task, isActive: boolean): string {
         isActive ? 'active' : ''
     ].filter(Boolean).join(' ');
 
+    const priorityBadge = task.priority && PRIORITY_MAP[task.priority]
+        ? `<span class="priority-badge" data-priority="${task.priority}">${PRIORITY_MAP[task.priority]}</span>`
+        : '';
+
     return `
         <div class="${classes}" data-id="${task.id}">
             <input type="checkbox" ${task.done ? 'checked' : ''}>
+            ${priorityBadge}
             <span class="task-text">${escapeHTML(task.text)}</span>
             ${task.deadline ? `<span class="deadline">📅 ${task.deadline}</span>` : ''}
         </div>

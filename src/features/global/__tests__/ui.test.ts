@@ -10,13 +10,16 @@ describe('features/global/ui', () => {
     });
 
     it('generateContextMenuHtml returns menu item elements as string', () => {
-        const items = [
-            { label: 'Item 1' },
-            { label: 'Item 2' }
+        const items: ui.ContextMenuItem[] = [
+            { label: 'Item 1', action: () => {} },
+            { label: 'Item 2', action: () => {} },
+            { type: 'priority', currentPriority: 3, onSelectPriority: () => {} }
         ];
         const html = ui.generateContextMenuHtml(items);
-        expect(html).toContain('<div class="menu-item">Item 1</div>');
-        expect(html).toContain('<div class="menu-item">Item 2</div>');
+        expect(html).toContain('<div class="menu-item" data-menu-type="item">Item 1</div>');
+        expect(html).toContain('<div class="menu-item" data-menu-type="item">Item 2</div>');
+        expect(html).toContain('menu-item-priority');
+        expect(html).toContain('class="btn-priority active" data-priority="3"');
     });
 
     describe('calculateMenuPosition', () => {

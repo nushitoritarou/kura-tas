@@ -37,7 +37,8 @@ export function generateUniqueTaskName(baseName: string, dateStr: string, existi
  * タスクリストをソートする
  * 1. 完了状態 (done: false が上)
  * 2. 他者依頼 (delegated: false/undefined が上)
- * 3. タスク名 (名前の昇順)
+ * 3. 優先度 (1〜5 が設定されているものが上。数値が小さい 1 が最優先。未設定は最下部)
+ * 4. タスク名 (名前の昇順)
  */
 export function sortTasks(tasks: Task[]): Task[] {
     return [...tasks].sort((a, b) => {
@@ -51,7 +52,16 @@ export function sortTasks(tasks: Task[]): Task[] {
         if (aDel !== bDel) {
             return aDel ? 1 : -1;
         }
-        // 3. タスク名の比較
+        // 3. 優先度の比較
+        const aPrio = a.priority;
+        const bPrio = b.priority;
+        if (aPrio !== bPrio) {
+            if (aPrio !== undefined && bPrio !== undefined) {
+                return aPrio - bPrio;
+            }
+            return aPrio !== undefined ? -1 : 1;
+        }
+        // 4. タスク名の比較
         return a.text.localeCompare(b.text, 'ja');
     });
 }
