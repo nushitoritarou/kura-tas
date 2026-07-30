@@ -256,6 +256,15 @@ export function wireKeyboard(ctx: WiringContext): void {
                     await tasksLogic.toggleTaskDelegated(activeId, ctx.store);
                 });
             }
+        } else if (['1', '2', '3', '4', '5'].includes(e.key)) {
+            e.preventDefault();
+            const activeId = ctx.store.ui.getState().activeTaskId;
+            if (activeId) {
+                const priority = Number(e.key);
+                await ctx.dispatchAction(async () => {
+                    await tasksLogic.toggleTaskPriority(activeId, priority, ctx.store);
+                });
+            }
         } else if (isDoubleD) {
             e.preventDefault();
             const activeId = ctx.store.ui.getState().activeTaskId;

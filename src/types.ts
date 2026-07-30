@@ -18,6 +18,7 @@ export interface Task {
   text: string;
   done: boolean;
   delegated?: boolean;
+  priority?: number;
   deadline?: string;
   noteId?: string;
   routineId?: string;

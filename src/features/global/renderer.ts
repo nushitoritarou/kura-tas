@@ -53,7 +53,7 @@ export function updateUndoRedoButtons(canUndo: boolean, canRedo: boolean): void 
 /**
  * 右クリックメニューを表示する
  */
-export function displayContextMenu(x: number, y: number, items: { label: string, action: () => void }[]): void {
+export function displayContextMenu(x: number, y: number, items: ui.ContextMenuItem[]): void {
     el.common.contextMenu.innerHTML = ui.generateContextMenuHtml(items);
     
     // 一旦表示してサイズを取得
@@ -82,12 +82,28 @@ export function displayContextMenu(x: number, y: number, items: { label: string,
     };
 
     // アクションの紐付け
-    const itemEls = el.common.contextMenu.querySelectorAll('.menu-item');
+    const childEls = el.common.contextMenu.children;
     items.forEach((item, idx) => {
-        (itemEls[idx] as HTMLElement).onclick = () => {
-            item.action();
-            closeMenu();
-        };
+        const itemEl = childEls[idx] as HTMLElement;
+        if (!itemEl) return;
+        if (item.type === 'priority') {
+            const btns = itemEl.querySelectorAll('.btn-priority');
+            btns.forEach(btn => {
+                (btn as HTMLElement).onclick = (e) => {
+                    e.stopPropagation();
+                    const p = Number((btn as HTMLElement).dataset.priority);
+                    if (!isNaN(p)) {
+                        item.onSelectPriority(p);
+                    }
+                    closeMenu();
+                };
+            });
+        } else {
+            itemEl.onclick = () => {
+                item.action();
+                closeMenu();
+            };
+        }
     });
 
     document.addEventListener('mousedown', onMouseDownOutside);

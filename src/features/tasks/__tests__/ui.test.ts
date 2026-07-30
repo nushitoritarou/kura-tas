@@ -27,4 +27,13 @@ describe('tasks ui', () => {
         const html = ui.generateTaskListHtml(tasks, '1');
         expect(html).toContain('active');
     });
+
+    it('priority が指定された時に priority-badge を付与すること', () => {
+        const tasks: Task[] = [
+            { id: '1', text: 'task 1', originalDate: "2024-06-01", date: '2024-06-01', done: false, priority: 2 }
+        ];
+        const html = ui.generateTaskListHtml(tasks);
+        expect(html).toContain('priority-badge');
+        expect(html).toContain('②');
+    });
 });
