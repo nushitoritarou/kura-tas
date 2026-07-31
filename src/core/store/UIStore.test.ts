@@ -47,7 +47,7 @@ describe('UIStore', () => {
             lastKnownToday: '2024-06-01',
             activeTaskId: '1',
             isEditMode: false,
-            version: '2.0.3',
+            version: '1.0.0',
             debugMode: true
         };
         await store.restoreSnapshot(snapshot);
