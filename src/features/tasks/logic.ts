@@ -40,6 +40,27 @@ export async function toggleTaskDelegated(taskId: string, deps: TaskDeps): Promi
     await deps.tasks.update({ ...task, delegated: task.delegated !== true });
 }
 
+/** 優先度の設定 */
+export async function setTaskPriority(taskId: string, priority: number | undefined, deps: TaskDeps): Promise<void> {
+    if (priority !== undefined && (!Number.isInteger(priority) || priority < 1 || priority > 5)) {
+        throw new Error('優先度は1〜5の整数で指定してください');
+    }
+    const task = deps.tasks.find(taskId);
+    if (!task) throw new Error('指定されたタスクが見つかりません');
+    await deps.tasks.update({ ...task, priority });
+}
+
+/** 優先度のトグル切り替え（同じ値なら解除、異なる値なら上書き） */
+export async function toggleTaskPriority(taskId: string, priority: number, deps: TaskDeps): Promise<void> {
+    if (!Number.isInteger(priority) || priority < 1 || priority > 5) {
+        throw new Error('優先度は1〜5の整数で指定してください');
+    }
+    const task = deps.tasks.find(taskId);
+    if (!task) throw new Error('指定されたタスクが見つかりません');
+    const newPriority = task.priority === priority ? undefined : priority;
+    await deps.tasks.update({ ...task, priority: newPriority });
+}
+
 /** タスク名の変更 */
 export async function renameTask(taskId: string, newText: string, deps: TaskDeps): Promise<void> {
     if (!newText) throw new Error('内容を入力してください');
@@ -120,6 +141,7 @@ export async function carryOverTasks(targetDate: string, days: number, deps: Tas
                 newTask.originalDate = t.originalDate;
                 newTask.deadline = t.deadline;
                 newTask.delegated = t.delegated;
+                newTask.priority = t.priority;
                 
                 await deps.tasks.add(newTask);
 
@@ -199,6 +221,9 @@ async function processJsonData(data: any[], targetDate: string, deps: TaskDeps):
         if (typeof item === 'object' && item !== null) {
             task.deadline = item.deadline || '';
             task.delegated = !!item.delegated;
+            if (typeof item.priority === 'number' && item.priority >= 1 && item.priority <= 5) {
+                task.priority = item.priority;
+            }
         }
         await deps.tasks.add(task);
     }

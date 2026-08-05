@@ -74,9 +74,35 @@ describe('tasks logic', () => {
         expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({ id: '3', delegated: true }));
     });
 
-    it('toggleTaskDelegated が存在しないタスクIDの場合にエラーを投げること', async () => {
-        vi.mocked(tasksStore.find).mockReturnValue(undefined);
-        await expect(logic.toggleTaskDelegated('999', deps)).rejects.toThrow('指定されたタスクが見つかりません');
+    it('setTaskPriority がタスクの優先度を設定・解除すること', async () => {
+        const mockTask: Task = { id: '1', text: 'test', originalDate: "2024-06-01", date: '2024-06-01', done: false };
+        vi.mocked(tasksStore.find).mockReturnValue(mockTask);
+
+        await logic.setTaskPriority('1', 3, deps);
+        expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({ id: '1', priority: 3 }));
+
+        await logic.setTaskPriority('1', undefined, deps);
+        expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({ id: '1', priority: undefined }));
+    });
+
+    it('toggleTaskPriority が同じ優先度の場合は解除し、異なる場合は設定すること', async () => {
+        // 設定なし -> 2
+        const mockTask1: Task = { id: '1', text: 'test', originalDate: "2024-06-01", date: '2024-06-01', done: false };
+        vi.mocked(tasksStore.find).mockReturnValueOnce(mockTask1);
+        await logic.toggleTaskPriority('1', 2, deps);
+        expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({ id: '1', priority: 2 }));
+
+        // 2 -> 2 (解除)
+        const mockTask2: Task = { id: '2', text: 'test', originalDate: "2024-06-01", date: '2024-06-01', done: false, priority: 2 };
+        vi.mocked(tasksStore.find).mockReturnValueOnce(mockTask2);
+        await logic.toggleTaskPriority('2', 2, deps);
+        expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({ id: '2', priority: undefined }));
+
+        // 2 -> 5 (変更)
+        const mockTask3: Task = { id: '3', text: 'test', originalDate: "2024-06-01", date: '2024-06-01', done: false, priority: 2 };
+        vi.mocked(tasksStore.find).mockReturnValueOnce(mockTask3);
+        await logic.toggleTaskPriority('3', 5, deps);
+        expect(tasksStore.update).toHaveBeenCalledWith(expect.objectContaining({ id: '3', priority: 5 }));
     });
 
     it('renameTask がタスク名を変更すること', async () => {

@@ -13,12 +13,30 @@ export function formatCurrentDate(dateStr: string): string {
     return `${dateStr} (${dayName})`;
 }
 
+export type ContextMenuItem = 
+    | { type?: 'item'; label: string; action: () => void }
+    | { type: 'priority'; currentPriority?: number; onSelectPriority: (priority: number) => void };
+
 /**
  * 共通右クリックメニューのHTMLを生成する
  */
-export function generateContextMenuHtml(items: { label: string }[]): string {
+export function generateContextMenuHtml(items: ContextMenuItem[]): string {
     return items
-        .map(item => `<div class="menu-item">${item.label}</div>`)
+        .map(item => {
+            if (item.type === 'priority') {
+                const buttons = [1, 2, 3, 4, 5].map(p => {
+                    const isActive = item.currentPriority === p ? 'active' : '';
+                    return `<button type="button" class="btn-priority ${isActive}" data-priority="${p}">${p}</button>`;
+                }).join('');
+                return `
+                    <div class="menu-item-priority" data-menu-type="priority">
+                        <span class="priority-label">優先度:</span>
+                        <div class="priority-buttons">${buttons}</div>
+                    </div>
+                `;
+            }
+            return `<div class="menu-item" data-menu-type="item">${item.label}</div>`;
+        })
         .join('');
 }
 

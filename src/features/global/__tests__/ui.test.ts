@@ -10,13 +10,16 @@ describe('features/global/ui', () => {
     });
 
     it('generateContextMenuHtml returns menu item elements as string', () => {
-        const items = [
-            { label: 'Item 1' },
-            { label: 'Item 2' }
+        const items: ui.ContextMenuItem[] = [
+            { label: 'Item 1', action: () => {} },
+            { label: 'Item 2', action: () => {} },
+            { type: 'priority', currentPriority: 3, onSelectPriority: () => {} }
         ];
         const html = ui.generateContextMenuHtml(items);
-        expect(html).toContain('<div class="menu-item">Item 1</div>');
-        expect(html).toContain('<div class="menu-item">Item 2</div>');
+        expect(html).toContain('<div class="menu-item" data-menu-type="item">Item 1</div>');
+        expect(html).toContain('<div class="menu-item" data-menu-type="item">Item 2</div>');
+        expect(html).toContain('menu-item-priority');
+        expect(html).toContain('class="btn-priority active" data-priority="3"');
     });
 
     describe('calculateMenuPosition', () => {
@@ -46,18 +49,18 @@ describe('features/global/ui', () => {
 
     describe('version display', () => {
         it('formatVersionText returns normal version format when not in debug mode', () => {
-            const text = ui.formatVersionText('2.0.2', false);
-            expect(text).toBe('v2.0.2');
+            const text = ui.formatVersionText('1.0.0', false);
+            expect(text).toBe('v1.0.0');
         });
 
         it('formatVersionText returns detailed format when in debug mode', () => {
-            const text = ui.formatVersionText('2.0.2', true, 'abc123f', '2026/07/16 18:00');
-            expect(text).toBe('v2.0.2 (commit: abc123f, built: 2026/07/16 18:00)');
+            const text = ui.formatVersionText('1.0.0', true, 'abc123f', '2026/07/16 18:00');
+            expect(text).toBe('v1.0.0 (commit: abc123f, built: 2026/07/16 18:00)');
         });
 
         it('formatDocumentTitle returns formatted document title', () => {
-            const title = ui.formatDocumentTitle('2.0.2');
-            expect(title).toBe('Kura-Tas v2.0.2');
+            const title = ui.formatDocumentTitle('1.0.0');
+            expect(title).toBe('Kura-Tas v1.0.0');
         });
     });
 });
