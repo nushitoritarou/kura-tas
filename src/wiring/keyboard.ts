@@ -11,6 +11,7 @@ import { WiringContext } from './context';
 export function wireKeyboard(ctx: WiringContext): void {
     let lastKey = '';
     let lastKeyTime = 0;
+    let isProcessingKey = false;
 
     const isNormalMode = (): boolean => {
         const active = document.activeElement;
@@ -129,7 +130,13 @@ export function wireKeyboard(ctx: WiringContext): void {
                 if (e.key === 's') {
                     if (document.activeElement === el.notes.editor) {
                         e.preventDefault();
-                        await handleSaveNote(ctx);
+                        if (isProcessingKey) return;
+                        isProcessingKey = true;
+                        try {
+                            await handleSaveNote(ctx);
+                        } finally {
+                            isProcessingKey = false;
+                        }
                     }
                 }
             }
@@ -137,189 +144,198 @@ export function wireKeyboard(ctx: WiringContext): void {
         }
 
         // ここからノーマルモードのショートカット
-        if (e.ctrlKey || e.metaKey) {
-            lastKey = ''; // バッファクリア
-            if (e.key === 's') {
-                e.preventDefault();
-                await handleSaveNote(ctx);
-
-            } else if (e.key === 'z') {
-                e.preventDefault();
-                await ctx.store.undo();
-            } else if (e.key === 'y') {
-                e.preventDefault();
-                await ctx.store.redo();
-            }
+        if (isProcessingKey) {
+            e.preventDefault();
             return;
         }
+        isProcessingKey = true;
+        try {
+            if (e.ctrlKey || e.metaKey) {
+                lastKey = ''; // バッファクリア
+                if (e.key === 's') {
+                    e.preventDefault();
+                    await handleSaveNote(ctx);
 
-        // 単一キー
-        const now = Date.now();
-        const isDoubleD = lastKey === 'd' && e.key === 'd' && (now - lastKeyTime < 1000);
-        const isDoubleG = lastKey === 'g' && e.key === 'g' && (now - lastKeyTime < 1000);
+                } else if (e.key === 'z') {
+                    e.preventDefault();
+                    await ctx.store.undo();
+                } else if (e.key === 'y') {
+                    e.preventDefault();
+                    await ctx.store.redo();
+                }
+                return;
+            }
 
-        // キーバッファの更新
-        if (e.key === 'd' && !isDoubleD) {
-            lastKey = 'd';
-            lastKeyTime = now;
-            return;
-        }
-        if (e.key === 'g' && !isDoubleG) {
-            lastKey = 'g';
-            lastKeyTime = now;
-            return;
-        }
+            // 単一キー
+            const now = Date.now();
+            const isDoubleD = lastKey === 'd' && e.key === 'd' && (now - lastKeyTime < 1000);
+            const isDoubleG = lastKey === 'g' && e.key === 'g' && (now - lastKeyTime < 1000);
 
-        lastKey = ''; // リセット
+            // キーバッファの更新
+            if (e.key === 'd' && !isDoubleD) {
+                lastKey = 'd';
+                lastKeyTime = now;
+                return;
+            }
+            if (e.key === 'g' && !isDoubleG) {
+                lastKey = 'g';
+                lastKeyTime = now;
+                return;
+            }
 
-        // 各種キーのハンドリング
-        if (e.key === 'j' || e.key === 'ArrowDown') {
-            e.preventDefault();
-            const currentDate = ctx.store.ui.getState().currentDate;
-            const dayTasks = ctx.store.tasks.getState().filter(t => t.date === currentDate);
-            const currentId = ctx.store.ui.getState().activeTaskId;
-            const nextId = tasksLogic.getNextTaskId(dayTasks, currentId);
-            if (nextId) {
+            lastKey = ''; // リセット
+
+            // 各種キーのハンドリング
+            if (e.key === 'j' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const currentDate = ctx.store.ui.getState().currentDate;
+                const dayTasks = ctx.store.tasks.getState().filter(t => t.date === currentDate);
+                const currentId = ctx.store.ui.getState().activeTaskId;
+                const nextId = tasksLogic.getNextTaskId(dayTasks, currentId);
+                if (nextId) {
+                    await ctx.dispatchAction(async () => {
+                        ctx.store.ui.update({ activeTaskId: nextId });
+                    }, { recordHistory: false });
+                }
+            } else if (e.key === 'k' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const currentDate = ctx.store.ui.getState().currentDate;
+                const dayTasks = ctx.store.tasks.getState().filter(t => t.date === currentDate);
+                const currentId = ctx.store.ui.getState().activeTaskId;
+                const prevId = tasksLogic.getPrevTaskId(dayTasks, currentId);
+                if (prevId) {
+                    await ctx.dispatchAction(async () => {
+                        ctx.store.ui.update({ activeTaskId: prevId });
+                    }, { recordHistory: false });
+                }
+            } else if (isDoubleG) {
+                e.preventDefault();
+                const currentDate = ctx.store.ui.getState().currentDate;
+                const dayTasks = ctx.store.tasks.getState().filter(t => t.date === currentDate);
+                if (dayTasks.length > 0) {
+                    await ctx.dispatchAction(async () => {
+                        ctx.store.ui.update({ activeTaskId: dayTasks[0].id });
+                    }, { recordHistory: false });
+                }
+            } else if (e.key === 'G') {
+                e.preventDefault();
+                const currentDate = ctx.store.ui.getState().currentDate;
+                const dayTasks = ctx.store.tasks.getState().filter(t => t.date === currentDate);
+                if (dayTasks.length > 0) {
+                    await ctx.dispatchAction(async () => {
+                        ctx.store.ui.update({ activeTaskId: dayTasks[dayTasks.length - 1].id });
+                    }, { recordHistory: false });
+                }
+            } else if (e.key === 'S') {
+                e.preventDefault();
+                const currentDate = ctx.store.ui.getState().currentDate;
                 await ctx.dispatchAction(async () => {
-                    ctx.store.ui.update({ activeTaskId: nextId });
-                }, { recordHistory: false });
-            }
-        } else if (e.key === 'k' || e.key === 'ArrowUp') {
-            e.preventDefault();
-            const currentDate = ctx.store.ui.getState().currentDate;
-            const dayTasks = ctx.store.tasks.getState().filter(t => t.date === currentDate);
-            const currentId = ctx.store.ui.getState().activeTaskId;
-            const prevId = tasksLogic.getPrevTaskId(dayTasks, currentId);
-            if (prevId) {
-                await ctx.dispatchAction(async () => {
-                    ctx.store.ui.update({ activeTaskId: prevId });
-                }, { recordHistory: false });
-            }
-        } else if (isDoubleG) {
-            e.preventDefault();
-            const currentDate = ctx.store.ui.getState().currentDate;
-            const dayTasks = ctx.store.tasks.getState().filter(t => t.date === currentDate);
-            if (dayTasks.length > 0) {
-                await ctx.dispatchAction(async () => {
-                    ctx.store.ui.update({ activeTaskId: dayTasks[0].id });
-                }, { recordHistory: false });
-            }
-        } else if (e.key === 'G') {
-            e.preventDefault();
-            const currentDate = ctx.store.ui.getState().currentDate;
-            const dayTasks = ctx.store.tasks.getState().filter(t => t.date === currentDate);
-            if (dayTasks.length > 0) {
-                await ctx.dispatchAction(async () => {
-                    ctx.store.ui.update({ activeTaskId: dayTasks[dayTasks.length - 1].id });
-                }, { recordHistory: false });
-            }
-        } else if (e.key === 'S') {
-            e.preventDefault();
-            const currentDate = ctx.store.ui.getState().currentDate;
-            await ctx.dispatchAction(async () => {
-                await tasksLogic.sortTasksForDate(currentDate, ctx.store);
-            });
-        } else if (e.key === 'h' || e.key === 'ArrowLeft') {
-            e.preventDefault();
-            await ctx.dispatchAction(async () => {
-                const nextDate = await globalLogic.shiftCurrentDate(-1, ctx.store);
-                await routineLogic.generateTasksFromRoutine(nextDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config, notes: ctx.store.notes });
-            }, { recordHistory: false });
-            ctx.store.resetHistory();
-        } else if (e.key === 'l' || e.key === 'ArrowRight') {
-            e.preventDefault();
-            await ctx.dispatchAction(async () => {
-                const nextDate = await globalLogic.shiftCurrentDate(1, ctx.store);
-                await routineLogic.generateTasksFromRoutine(nextDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config, notes: ctx.store.notes });
-            }, { recordHistory: false });
-            ctx.store.resetHistory();
-        } else if (e.key === 'Home' || e.key === '0' || e.key === '^') {
-            e.preventDefault();
-            await ctx.dispatchAction(async () => {
-                const nextDate = await globalLogic.jumpToToday(ctx.store);
-                await routineLogic.generateTasksFromRoutine(nextDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config, notes: ctx.store.notes });
-            }, { recordHistory: false });
-            ctx.store.resetHistory();
-        } else if (e.key === 'x') {
-            e.preventDefault();
-            const activeId = ctx.store.ui.getState().activeTaskId;
-            if (activeId) {
-                await ctx.dispatchAction(async () => {
-                    await tasksLogic.toggleTaskDone(activeId, ctx.store);
+                    await tasksLogic.sortTasksForDate(currentDate, ctx.store);
                 });
-            }
-        } else if (e.key === 'w') {
-            e.preventDefault();
-            const activeId = ctx.store.ui.getState().activeTaskId;
-            if (activeId) {
+            } else if (e.key === 'h' || e.key === 'ArrowLeft') {
+                e.preventDefault();
                 await ctx.dispatchAction(async () => {
-                    await tasksLogic.toggleTaskDelegated(activeId, ctx.store);
-                });
-            }
-        } else if (['1', '2', '3', '4', '5'].includes(e.key)) {
-            e.preventDefault();
-            const activeId = ctx.store.ui.getState().activeTaskId;
-            if (activeId) {
-                const priority = Number(e.key);
-                await ctx.dispatchAction(async () => {
-                    await tasksLogic.toggleTaskPriority(activeId, priority, ctx.store);
-                });
-            }
-        } else if (isDoubleD) {
-            e.preventDefault();
-            const activeId = ctx.store.ui.getState().activeTaskId;
-            if (activeId) {
-                const nextActiveId = getNextActiveTaskId(activeId);
-                await ctx.dispatchAction(async () => {
-                    await tasksLogic.deleteTask(activeId, ctx.store);
-                    ctx.store.ui.update({ activeTaskId: nextActiveId });
+                    const nextDate = await globalLogic.shiftCurrentDate(-1, ctx.store);
+                    await routineLogic.generateTasksFromRoutine(nextDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config, notes: ctx.store.notes });
                 }, { recordHistory: false });
-            }
-        } else if (e.key === 'a' || e.key === 'A') {
-            e.preventDefault();
-            const activeId = ctx.store.ui.getState().activeTaskId;
-            if (activeId) {
-                const task = ctx.store.tasks.find(activeId);
-                if (task) {
-                    const newText = globalRenderer.promptUser('名称編集', task.text);
-                    if (newText !== null) {
-                        await ctx.dispatchAction(async () => {
-                            await tasksLogic.renameTask(activeId, newText.trim(), ctx.store);
-                        });
+                ctx.store.resetHistory();
+            } else if (e.key === 'l' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                await ctx.dispatchAction(async () => {
+                    const nextDate = await globalLogic.shiftCurrentDate(1, ctx.store);
+                    await routineLogic.generateTasksFromRoutine(nextDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config, notes: ctx.store.notes });
+                }, { recordHistory: false });
+                ctx.store.resetHistory();
+            } else if (e.key === 'Home' || e.key === '0' || e.key === '^') {
+                e.preventDefault();
+                await ctx.dispatchAction(async () => {
+                    const nextDate = await globalLogic.jumpToToday(ctx.store);
+                    await routineLogic.generateTasksFromRoutine(nextDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config, notes: ctx.store.notes });
+                }, { recordHistory: false });
+                ctx.store.resetHistory();
+            } else if (e.key === 'x') {
+                e.preventDefault();
+                const activeId = ctx.store.ui.getState().activeTaskId;
+                if (activeId) {
+                    await ctx.dispatchAction(async () => {
+                        await tasksLogic.toggleTaskDone(activeId, ctx.store);
+                    });
+                }
+            } else if (e.key === 'w') {
+                e.preventDefault();
+                const activeId = ctx.store.ui.getState().activeTaskId;
+                if (activeId) {
+                    await ctx.dispatchAction(async () => {
+                        await tasksLogic.toggleTaskDelegated(activeId, ctx.store);
+                    });
+                }
+            } else if (['1', '2', '3', '4', '5'].includes(e.key)) {
+                e.preventDefault();
+                const activeId = ctx.store.ui.getState().activeTaskId;
+                if (activeId) {
+                    const priority = Number(e.key);
+                    await ctx.dispatchAction(async () => {
+                        await tasksLogic.toggleTaskPriority(activeId, priority, ctx.store);
+                    });
+                }
+            } else if (isDoubleD) {
+                e.preventDefault();
+                const activeId = ctx.store.ui.getState().activeTaskId;
+                if (activeId) {
+                    const nextActiveId = getNextActiveTaskId(activeId);
+                    await ctx.dispatchAction(async () => {
+                        await tasksLogic.deleteTask(activeId, ctx.store);
+                        ctx.store.ui.update({ activeTaskId: nextActiveId });
+                    }, { recordHistory: false });
+                }
+            } else if (e.key === 'a' || e.key === 'A') {
+                e.preventDefault();
+                const activeId = ctx.store.ui.getState().activeTaskId;
+                if (activeId) {
+                    const task = ctx.store.tasks.find(activeId);
+                    if (task) {
+                        const newText = globalRenderer.promptUser('名称編集', task.text);
+                        if (newText !== null) {
+                            await ctx.dispatchAction(async () => {
+                                await tasksLogic.renameTask(activeId, newText.trim(), ctx.store);
+                            });
+                        }
                     }
                 }
+            } else if (e.key === 'm') {
+                e.preventDefault();
+                const activeId = ctx.store.ui.getState().activeTaskId;
+                if (activeId) {
+                    const nextActiveId = getNextActiveTaskId(activeId);
+                    await ctx.dispatchAction(async () => {
+                        await tasksLogic.moveTaskToNextWorkDay(activeId, ctx.store);
+                        ctx.store.ui.update({ activeTaskId: nextActiveId });
+                    });
+                }
+            } else if (e.key === 'i') {
+                e.preventDefault();
+                el.inbox.input.focus();
+            } else if (e.key === 'e') {
+                e.preventDefault();
+                await switchToEditMode(ctx);
+            } else if (e.key === '?' || e.key === 'Help') {
+                e.preventDefault();
+                // ショートカットモーダルの表示状態をトグル
+                const isShown = globalRenderer.isShortcutsModalShown();
+                globalRenderer.toggleShortcutsModal(!isShown);
+            } else if (e.key === 'o') {
+                e.preventDefault();
+                el.modals.quickAdd.root.style.display = 'flex';
+                el.modals.quickAdd.input.value = '';
+                setTimeout(() => {
+                    el.modals.quickAdd.input.focus();
+                }, 50);
+            } else if (e.key === 'u') {
+                e.preventDefault();
+                await ctx.store.undo();
             }
-        } else if (e.key === 'm') {
-            e.preventDefault();
-            const activeId = ctx.store.ui.getState().activeTaskId;
-            if (activeId) {
-                const nextActiveId = getNextActiveTaskId(activeId);
-                await ctx.dispatchAction(async () => {
-                    await tasksLogic.moveTaskToNextWorkDay(activeId, ctx.store);
-                    ctx.store.ui.update({ activeTaskId: nextActiveId });
-                });
-            }
-        } else if (e.key === 'i') {
-            e.preventDefault();
-            el.inbox.input.focus();
-        } else if (e.key === 'e') {
-            e.preventDefault();
-            await switchToEditMode(ctx);
-        } else if (e.key === '?' || e.key === 'Help') {
-            e.preventDefault();
-            // ショートカットモーダルの表示状態をトグル
-            const isShown = globalRenderer.isShortcutsModalShown();
-            globalRenderer.toggleShortcutsModal(!isShown);
-        } else if (e.key === 'o') {
-            e.preventDefault();
-            el.modals.quickAdd.root.style.display = 'flex';
-            el.modals.quickAdd.input.value = '';
-            setTimeout(() => {
-                el.modals.quickAdd.input.focus();
-            }, 50);
-        } else if (e.key === 'u') {
-            e.preventDefault();
-            await ctx.store.undo();
+        } finally {
+            isProcessingKey = false;
         }
     };
 }
