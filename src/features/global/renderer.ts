@@ -144,3 +144,108 @@ export function isShortcutsModalShown(): boolean {
     return el.modals.shortcuts.root.style.display === 'flex';
 }
 
+let currentTaskEditModalCancel: (() => void) | null = null;
+
+/**
+ * タスク編集モーダルが表示されているか判定する
+ */
+export function isTaskEditModalShown(): boolean {
+    return Boolean(el.modals.editTask?.root && el.modals.editTask.root.style.display === 'flex');
+}
+
+/**
+ * タスク編集モーダルをキャンセルして閉じる
+ */
+export function cancelTaskEditModal(): void {
+    if (currentTaskEditModalCancel) {
+        currentTaskEditModalCancel();
+    }
+}
+
+/**
+ * タスク名編集モーダルを表示し、入力されたテキストを返す (キャンセル時は null)
+ * mode:
+ *  'i': カーソルを先頭 (0) に配置
+ *  'a' | 'A': カーソルを末尾 (length) に配置
+ *  'c': テキストを全選択
+ */
+export function showTaskEditModal(initialText: string, mode: 'i' | 'a' | 'A' | 'c' = 'a'): Promise<string | null> {
+    if (currentTaskEditModalCancel) {
+        currentTaskEditModalCancel();
+    }
+
+    return new Promise((resolve) => {
+        const root = el.modals.editTask.root;
+        const input = el.modals.editTask.input;
+        const btnSubmit = el.modals.editTask.btnSubmit;
+        const btnClose = el.modals.editTask.btnClose;
+
+        input.value = initialText;
+        root.style.display = 'flex';
+
+        const applyFocus = () => {
+            input.focus();
+            if (mode === 'i') {
+                input.setSelectionRange(0, 0);
+            } else if (mode === 'c') {
+                input.select();
+            } else {
+                input.setSelectionRange(initialText.length, initialText.length);
+            }
+        };
+
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    applyFocus();
+                });
+            });
+        } else {
+            setTimeout(applyFocus, 50);
+        }
+
+        const cleanup = () => {
+            root.style.display = 'none';
+            btnSubmit.onclick = null;
+            btnClose.onclick = null;
+            root.onclick = null;
+            input.onkeydown = null;
+            currentTaskEditModalCancel = null;
+        };
+
+        const handleSave = () => {
+            const val = input.value;
+            cleanup();
+            resolve(val);
+        };
+
+        const handleCancel = () => {
+            cleanup();
+            resolve(null);
+        };
+
+        currentTaskEditModalCancel = handleCancel;
+
+        btnSubmit.onclick = handleSave;
+        btnClose.onclick = handleCancel;
+        root.onclick = (e) => {
+            if (e.target === root) {
+                handleCancel();
+            }
+        };
+
+        input.onkeydown = (e) => {
+            if (e.isComposing) return;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCancel();
+            }
+        };
+    });
+}
+
+

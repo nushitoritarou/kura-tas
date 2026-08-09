@@ -366,7 +366,7 @@
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 6px;">タスク名の編集</td>
-                            <td style="padding: 6px;"><kbd>a</kbd> / <kbd>A</kbd></td>
+                            <td style="padding: 6px;"><kbd>a</kbd> / <kbd>A</kbd> (末尾) / <kbd>i</kbd> (先頭) / <kbd>c</kbd> (全選択)</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 6px;">タスクを明日（翌営業日）に移動</td>
@@ -381,7 +381,7 @@
                             <td style="padding: 6px;"></td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 6px;">Inbox入力欄にフォーカス (新規タスク用)</td>
+                            <td style="padding: 6px;">Inbox入力欄にフォーカス (未選択時)</td>
                             <td style="padding: 6px;"><kbd>i</kbd></td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
@@ -389,7 +389,7 @@
                             <td style="padding: 6px;"><kbd>e</kbd></td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 6px;">入力フォーカスを外す（ノーマルモード）</td>
+                            <td style="padding: 6px;">選択解除 / 入力フォーカス解除</td>
                             <td style="padding: 6px;"><kbd>Esc</kbd></td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
@@ -431,6 +431,20 @@
             <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="btn btn-secondary" id="btn-close-quick-add">キャンセル</button>
                 <button class="btn btn-primary" id="btn-do-quick-add">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Task -->
+    <div id="modal-edit-task" class="modal" tabindex="-1">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>✏️ タスク名編集</h3>
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="edit-task-input" class="inbox-input" placeholder="タスク名を入力..." style="width: 100%; box-sizing: border-box; margin: 0;">
+            </div>
+            <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" id="btn-close-edit-task">キャンセル</button>
+                <button class="btn btn-primary" id="btn-do-edit-task">保存</button>
             </div>
         </div>
     </div>
