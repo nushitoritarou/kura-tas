@@ -1,6 +1,7 @@
 import { TaskStore } from '@/core/store/TaskStore';
 import { InboxItemStore } from '@/core/store/InboxItemStore';
 import { NoteStore } from '@/core/store/NoteStore';
+import { ConfigStore } from '@/core/store/ConfigStore';
 import { Task } from '@/types';
 import * as factories from "@/core/engine/factories";
 import * as converters from "@/core/engine/converters";
@@ -11,6 +12,7 @@ export interface TaskDeps {
     tasks: TaskStore;
     inboxItems: InboxItemStore;
     notes: NoteStore;
+    config?: ConfigStore;
 }
 
 /** 指定日のタスクをロード */
@@ -79,7 +81,11 @@ export async function moveTaskToNextWorkDay(taskId: string, deps: TaskDeps): Pro
     const task = deps.tasks.find(taskId);
     if (!task) throw new Error('指定されたタスクが見つかりません');
 
-    const nextDay = datetime.getNextWorkDay(task.date);
+    const config = deps.config?.getState() || {};
+    const workDays = config.workDays || [1, 2, 3, 4, 5];
+    const holidays = config.holidays || [];
+
+    const nextDay = datetime.getNextWorkDay(task.date, workDays, holidays);
     
     // SRP遵守: 日付を跨ぐ移動は remove & add で行う
     await deps.tasks.remove(taskId);
