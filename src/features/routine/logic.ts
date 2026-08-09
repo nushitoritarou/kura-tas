@@ -226,6 +226,7 @@ export async function generateTasksFromRoutine(
         await deps.tasks.addMany(newTasks);
 
         // テンプレートノートの自動生成
+        const notePromises: Promise<any>[] = [];
         for (const task of newTasks) {
             if (!task.routineId) continue;
             const master = masters.find(m => m.id === task.routineId);
@@ -237,8 +238,11 @@ export async function generateTasksFromRoutine(
                     type: 'task',
                     taskId: task.id
                 });
-                await deps.notes.saveNote(note);
+                notePromises.push(deps.notes.saveNote(note));
             }
+        }
+        if (notePromises.length > 0) {
+            await Promise.all(notePromises);
         }
     }
 }
