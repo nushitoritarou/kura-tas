@@ -14,7 +14,8 @@ vi.mock('@/core/el', () => ({
             routine: { root: { style: { display: 'none' } } },
             holidays: { root: { style: { display: 'none' } } },
             import: { root: { style: { display: 'none' } } },
-            quickAdd: { root: { style: { display: 'none' }, input: { value: '', focus: vi.fn() } } }
+            quickAdd: { root: { style: { display: 'none' }, input: { value: '', focus: vi.fn() } } },
+            editTask: { root: { style: { display: 'none' }, input: { value: '', focus: vi.fn(), setSelectionRange: vi.fn(), select: vi.fn() }, btnSubmit: {}, btnClose: {} } }
         },
         inbox: { input: { focus: vi.fn() } },
         notes: { editor: null }
@@ -37,7 +38,8 @@ describe('wireKeyboard double-trigger guard', () => {
                     getState: () => [{ id: 'task-1', text: 'Task 1', date: '2026-08-09', done: false }],
                     find: () => ({ id: 'task-1', text: 'Task 1', date: '2026-08-09', done: false }),
                     remove: vi.fn(),
-                    add: vi.fn()
+                    add: vi.fn(),
+                    update: vi.fn()
                 },
                 routine: {} as any,
                 config: { getState: () => ({ workDays: [1, 2, 3, 4, 5], holidays: [] }) } as any,
@@ -128,5 +130,69 @@ describe('wireKeyboard double-trigger guard', () => {
         await window.onkeydown!(eventRight);
         expect(dispatchActionCalls).toBe(0);
     });
+
+    it('タスク未選択時に i を押すと Inbox にフォーカスすること', async () => {
+        mockCtx.store.ui.getState = () => ({ currentDate: '2026-08-09', activeTaskId: null }) as any;
+        const { el } = await import('@/core/el');
+        el.inbox.input.focus = vi.fn();
+
+        wireKeyboard(mockCtx);
+
+        const event = new KeyboardEvent('keydown', { key: 'i' });
+        await window.onkeydown!(event);
+
+        expect(el.inbox.input.focus).toHaveBeenCalled();
+    });
+
+    it('ノーマルモードで Esc を押すとタスク選択状態が解除されること', async () => {
+        wireKeyboard(mockCtx);
+
+        const event = new KeyboardEvent('keydown', { key: 'Escape' });
+        await window.onkeydown!(event);
+
+        expect(mockCtx.store.ui.update).toHaveBeenCalledWith({ activeTaskId: null });
+    });
+
+    it('タスク選択時に S キーを押すとソート処理が実行されること', async () => {
+        const { sortTasksForDate } = await import('@/features/tasks/logic');
+        vi.mock('@/features/tasks/logic', async (importOriginal) => {
+            const actual = await importOriginal<typeof import('@/features/tasks/logic')>();
+            return {
+                ...actual,
+                sortTasksForDate: vi.fn()
+            };
+        });
+
+        wireKeyboard(mockCtx);
+
+        const event = new KeyboardEvent('keydown', { key: 'S' });
+        await window.onkeydown!(event);
+
+        expect(sortTasksForDate).toHaveBeenCalledWith('2026-08-09', mockCtx.store);
+    });
+
+    it('タスク選択時に a, i, c キーを押すと編集モーダルが適切なモードで呼び出されること', async () => {
+        const globalRenderer = await import('@/features/global/renderer');
+        const showTaskEditModalSpy = vi.spyOn(globalRenderer, 'showTaskEditModal').mockResolvedValue('Updated Task');
+
+        wireKeyboard(mockCtx);
+
+        // a キー
+        const eventA = new KeyboardEvent('keydown', { key: 'a' });
+        await window.onkeydown!(eventA);
+        expect(showTaskEditModalSpy).toHaveBeenCalledWith('Task 1', 'a');
+
+        // i キー (選択中)
+        const eventI = new KeyboardEvent('keydown', { key: 'i' });
+        await window.onkeydown!(eventI);
+        expect(showTaskEditModalSpy).toHaveBeenCalledWith('Task 1', 'i');
+
+        // c キー
+        const eventC = new KeyboardEvent('keydown', { key: 'c' });
+        await window.onkeydown!(eventC);
+        expect(showTaskEditModalSpy).toHaveBeenCalledWith('Task 1', 'c');
+    });
 });
+
+
 

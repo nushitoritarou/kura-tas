@@ -39,11 +39,12 @@ export function wireKeyboard(ctx: WiringContext): void {
     const isAnyModalOpen = (): boolean => {
         return (
             isSetupOverlayVisible() ||
-            el.modals.shortcuts.root.style.display === 'flex' ||
-            el.modals.routine.root.style.display === 'flex' ||
-            el.modals.holidays.root.style.display === 'flex' ||
-            el.modals.import.root.style.display === 'flex' ||
-            el.modals.quickAdd.root.style.display === 'flex'
+            el.modals.shortcuts?.root?.style?.display === 'flex' ||
+            el.modals.routine?.root?.style?.display === 'flex' ||
+            el.modals.holidays?.root?.style?.display === 'flex' ||
+            el.modals.import?.root?.style?.display === 'flex' ||
+            el.modals.quickAdd?.root?.style?.display === 'flex' ||
+            globalRenderer.isTaskEditModalShown()
         );
     };
 
@@ -63,14 +64,16 @@ export function wireKeyboard(ctx: WiringContext): void {
             if (active && (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement)) {
                 // 開いているモーダルがあるか判定し、そのルートにフォーカスを移す
                 let targetToFocus: HTMLElement | null = null;
-                if (el.modals.routine.root.style.display === 'flex') {
+                if (el.modals.routine?.root?.style?.display === 'flex') {
                     targetToFocus = el.modals.routine.root;
-                } else if (el.modals.holidays.root.style.display === 'flex') {
+                } else if (el.modals.holidays?.root?.style?.display === 'flex') {
                     targetToFocus = el.modals.holidays.root;
-                } else if (el.modals.import.root.style.display === 'flex' || el.modals.import.root.style.display === 'block') {
+                } else if (el.modals.import?.root?.style?.display === 'flex' || el.modals.import?.root?.style?.display === 'block') {
                     targetToFocus = el.modals.import.root;
-                } else if (el.modals.quickAdd.root.style.display === 'flex') {
+                } else if (el.modals.quickAdd?.root?.style?.display === 'flex') {
                     targetToFocus = el.modals.quickAdd.root;
+                } else if (globalRenderer.isTaskEditModalShown()) {
+                    targetToFocus = el.modals.editTask.root;
                 } else if (globalRenderer.isShortcutsModalShown()) {
                     targetToFocus = el.modals.shortcuts.root;
                 }
@@ -105,23 +108,37 @@ export function wireKeyboard(ctx: WiringContext): void {
                 e.preventDefault();
             }
             // 定期タスクモーダルが開いていたら閉じる
-            if (el.modals.routine.root.style.display === 'flex') {
+            if (el.modals.routine?.root?.style?.display === 'flex') {
                 routineRenderer.toggleRoutineModal(false);
                 e.preventDefault();
             }
             // 休日設定モーダルが開いていたら閉じる
-            if (el.modals.holidays.root.style.display === 'flex') {
+            if (el.modals.holidays?.root?.style?.display === 'flex') {
                 holidaysRenderer.toggleHolidaysModal(false);
                 e.preventDefault();
             }
             // インポートモーダルが開いていたら閉じる
-            if (el.modals.import.root.style.display === 'flex') {
+            if (el.modals.import?.root?.style?.display === 'flex') {
                 el.modals.import.root.style.display = 'none';
                 e.preventDefault();
             }
             // クイックタスク追加モーダルが開いていたら閉じる
-            if (el.modals.quickAdd.root.style.display === 'flex') {
+            if (el.modals.quickAdd?.root?.style?.display === 'flex') {
                 el.modals.quickAdd.root.style.display = 'none';
+                e.preventDefault();
+            }
+            // タスク編集モーダルが開いていたら閉じる
+            if (globalRenderer.isTaskEditModalShown()) {
+                globalRenderer.cancelTaskEditModal();
+                e.preventDefault();
+            }
+
+            // ノーマルモードでタスクが選択されている場合は選択状態を解除する
+            const activeTaskId = ctx.store.ui.getState().activeTaskId;
+            if (activeTaskId) {
+                await ctx.dispatchAction(async () => {
+                    ctx.store.ui.update({ activeTaskId: null });
+                }, { recordHistory: false });
                 e.preventDefault();
             }
             return;
@@ -310,8 +327,22 @@ export function wireKeyboard(ctx: WiringContext): void {
                 if (activeId) {
                     const task = ctx.store.tasks.find(activeId);
                     if (task) {
-                        const newText = globalRenderer.promptUser('名称編集', task.text);
-                        if (newText !== null) {
+                        const newText = await globalRenderer.showTaskEditModal(task.text, 'a');
+                        if (newText !== null && newText.trim() !== '') {
+                            await ctx.dispatchAction(async () => {
+                                await tasksLogic.renameTask(activeId, newText.trim(), ctx.store);
+                            });
+                        }
+                    }
+                }
+            } else if (e.key === 'c' || e.key === 'C') {
+                e.preventDefault();
+                const activeId = ctx.store.ui.getState().activeTaskId;
+                if (activeId) {
+                    const task = ctx.store.tasks.find(activeId);
+                    if (task) {
+                        const newText = await globalRenderer.showTaskEditModal(task.text, 'c');
+                        if (newText !== null && newText.trim() !== '') {
                             await ctx.dispatchAction(async () => {
                                 await tasksLogic.renameTask(activeId, newText.trim(), ctx.store);
                             });
@@ -330,7 +361,20 @@ export function wireKeyboard(ctx: WiringContext): void {
                 }
             } else if (e.key === 'i') {
                 e.preventDefault();
-                el.inbox.input.focus();
+                const activeId = ctx.store.ui.getState().activeTaskId;
+                if (activeId) {
+                    const task = ctx.store.tasks.find(activeId);
+                    if (task) {
+                        const newText = await globalRenderer.showTaskEditModal(task.text, 'i');
+                        if (newText !== null && newText.trim() !== '') {
+                            await ctx.dispatchAction(async () => {
+                                await tasksLogic.renameTask(activeId, newText.trim(), ctx.store);
+                            });
+                        }
+                    }
+                } else {
+                    el.inbox.input.focus();
+                }
             } else if (e.key === 'e') {
                 e.preventDefault();
                 await switchToEditMode(ctx);

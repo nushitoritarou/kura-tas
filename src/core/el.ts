@@ -116,6 +116,12 @@ export const el = {
       input: document.getElementById('quick-add-input') as HTMLInputElement,
       btnSubmit: document.getElementById('btn-do-quick-add') as HTMLElement,
       btnClose: document.getElementById('btn-close-quick-add') as HTMLElement,
+    },
+    editTask: {
+      root: document.getElementById('modal-edit-task') as HTMLElement,
+      input: document.getElementById('edit-task-input') as HTMLInputElement,
+      btnSubmit: document.getElementById('btn-do-edit-task') as HTMLElement,
+      btnClose: document.getElementById('btn-close-edit-task') as HTMLElement,
     }
   }
 };

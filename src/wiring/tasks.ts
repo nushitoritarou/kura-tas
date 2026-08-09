@@ -91,8 +91,8 @@ export function wireTasks(ctx: WiringContext): void {
             {
                 label: '名称編集',
                 action: async () => {
-                    const newText = globalRenderer.promptUser('名称編集', task.text);
-                    if (newText !== null) {
+                    const newText = await globalRenderer.showTaskEditModal(task.text, 'a');
+                    if (newText !== null && newText.trim() !== '') {
                         await ctx.dispatchAction(async () => {
                             await tasksLogic.renameTask(id, newText.trim(), ctx.store);
                         });
