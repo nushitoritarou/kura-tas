@@ -24,8 +24,10 @@ export async function sendToTask(inboxItemId: string, targetDate: string, deps: 
 
     const task = converters.convertInboxItemToTask(item, targetDate);
 
-    await deps.tasks.add(task);
-    await deps.inboxItems.remove(inboxItemId);
+    await Promise.all([
+        deps.tasks.add(task),
+        deps.inboxItems.remove(inboxItemId)
+    ]);
 }
 
 export async function renameInboxItem(inboxItemId: string, newText: string, deps: InboxDeps) {

@@ -144,6 +144,27 @@ describe('tasks logic', () => {
         }));
     });
 
+    it('moveTaskToNextWorkDay が休日・祝日設定（holidays）を考慮してタスクを移動すること', async () => {
+        const mockTask: Task = { id: '1', text: 'test', originalDate: "2024-06-03", date: '2024-06-03', done: false }; // 月曜日
+        vi.mocked(tasksStore.find).mockReturnValue(mockTask);
+
+        const configStore = {
+            getState: vi.fn().mockReturnValue({
+                workDays: [1, 2, 3, 4, 5],
+                holidays: ['2024-06-04'] // 火曜日が祝日
+            })
+        } as any;
+
+        await logic.moveTaskToNextWorkDay('1', { ...deps, config: configStore });
+
+        expect(tasksStore.remove).toHaveBeenCalledWith('1');
+        expect(tasksStore.add).toHaveBeenCalledWith(expect.objectContaining({
+            text: 'test',
+            date: '2024-06-05', // 祝日の火曜日をスキップして水曜日
+            done: false
+        }));
+    });
+
     it('returnToInbox がタスクを削除し、インボックスに追加すること', async () => {
         const mockTask: Task = { id: '1', text: 'test', originalDate: "2024-06-01", date: '2024-06-01', done: false };
         vi.mocked(tasksStore.find).mockReturnValue(mockTask);

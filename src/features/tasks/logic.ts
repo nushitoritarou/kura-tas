@@ -1,6 +1,7 @@
 import { TaskStore } from '@/core/store/TaskStore';
 import { InboxItemStore } from '@/core/store/InboxItemStore';
 import { NoteStore } from '@/core/store/NoteStore';
+import { ConfigStore } from '@/core/store/ConfigStore';
 import { Task } from '@/types';
 import * as factories from "@/core/engine/factories";
 import * as converters from "@/core/engine/converters";
@@ -11,6 +12,7 @@ export interface TaskDeps {
     tasks: TaskStore;
     inboxItems: InboxItemStore;
     notes: NoteStore;
+    config?: ConfigStore;
 }
 
 /** 指定日のタスクをロード */
@@ -79,11 +81,17 @@ export async function moveTaskToNextWorkDay(taskId: string, deps: TaskDeps): Pro
     const task = deps.tasks.find(taskId);
     if (!task) throw new Error('指定されたタスクが見つかりません');
 
-    const nextDay = datetime.getNextWorkDay(task.date);
+    const config = deps.config?.getState() || {};
+    const workDays = config.workDays || [1, 2, 3, 4, 5];
+    const holidays = config.holidays || [];
+
+    const nextDay = datetime.getNextWorkDay(task.date, workDays, holidays);
     
     // SRP遵守: 日付を跨ぐ移動は remove & add で行う
-    await deps.tasks.remove(taskId);
-    await deps.tasks.add({ ...task, date: nextDay, done: false });
+    await Promise.all([
+        deps.tasks.remove(taskId),
+        deps.tasks.add({ ...task, date: nextDay, done: false })
+    ]);
 }
 
 /** インボックスへ戻す (Tasks -> Inbox) */
@@ -92,8 +100,10 @@ export async function returnToInbox(taskId: string, deps: TaskDeps): Promise<voi
     if (!task) throw new Error('指定されたタスクが見つかりません');
 
     const inboxItem = converters.convertTaskToInboxItem(task);
-    await deps.inboxItems.add(inboxItem);
-    await deps.tasks.remove(taskId);
+    await Promise.all([
+        deps.inboxItems.add(inboxItem),
+        deps.tasks.remove(taskId)
+    ]);
 }
 
 /** 繰り越し処理前に、移動対象のノートをあらかじめロードしてキャッシュに載せる (副作用のないリード処理) */
@@ -124,38 +134,44 @@ export async function carryOverTasks(targetDate: string, days: number, deps: Tas
         const incomplete = oldTasks.filter(t => !t.done);
 
         if (incomplete.length > 0) {
+            const preparedItems = [];
             for (const t of incomplete) {
                 const uniqueName = tasksEngine.generateUniqueTaskName(t.text, prevDate, existingNames);
-                
-                // 元のファイルを更新 (完了扱いにする)
-                // 紐づくnoteは引き継がれるため、元のタスク側のnoteIdは削除する
-                await deps.tasks.update({ 
-                    ...t, 
-                    done: true, 
-                    text: `${t.text} (Carried Over)`,
-                    noteId: undefined
-                });
+                existingNames.push(uniqueName);
 
-                // 新しいタスクを追加
                 const newTask = factories.createTask(uniqueName, targetDate);
                 newTask.originalDate = t.originalDate;
                 newTask.deadline = t.deadline;
                 newTask.delegated = t.delegated;
                 newTask.priority = t.priority;
-                
-                await deps.tasks.add(newTask);
 
-                // ノートの移動処理
                 const oldNoteId = t.noteId || factories.getNoteId('task', t.id);
-                const oldNote = await deps.notes.getNote(oldNoteId, { date: prevDate, taskId: t.id });
-                if (oldNote && oldNote.body.trim() !== '') {
-                    const newNoteId = factories.getNoteId('task', newTask.id);
-                    await deps.notes.moveNote(oldNoteId, newNoteId, { date: targetDate, taskId: newTask.id });
-                }
-
-                existingNames.push(uniqueName);
-                tasksAddedCount++;
+                preparedItems.push({ t, newTask, oldNoteId, prevDate });
             }
+
+            await Promise.all(
+                preparedItems.map(async ({ t, newTask, oldNoteId, prevDate }) => {
+                    const oldNote = await deps.notes.getNote(oldNoteId, { date: prevDate, taskId: t.id });
+                    const promises: Promise<any>[] = [
+                        deps.tasks.update({ 
+                            ...t, 
+                            done: true, 
+                            text: `${t.text} (Carried Over)`,
+                            noteId: undefined
+                        }),
+                        deps.tasks.add(newTask)
+                    ];
+
+                    if (oldNote && oldNote.body.trim() !== '') {
+                        const newNoteId = factories.getNoteId('task', newTask.id);
+                        promises.push(deps.notes.moveNote(oldNoteId, newNoteId, { date: targetDate, taskId: newTask.id }));
+                    }
+
+                    await Promise.all(promises);
+                })
+            );
+
+            tasksAddedCount += incomplete.length;
         }
     }
     return tasksAddedCount;
