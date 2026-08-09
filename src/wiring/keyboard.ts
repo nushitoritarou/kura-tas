@@ -26,9 +26,19 @@ export function wireKeyboard(ctx: WiringContext): void {
         return true;
     };
 
+    const isSetupOverlayVisible = (): boolean => {
+        if (!el.setup.overlay) return false;
+        if (el.setup.overlay.style.display === 'none') return false;
+        if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+            const computedStyle = window.getComputedStyle(el.setup.overlay);
+            if (computedStyle.display === 'none') return false;
+        }
+        return true;
+    };
+
     const isAnyModalOpen = (): boolean => {
         return (
-            (el.setup.overlay && el.setup.overlay.style.display !== 'none') ||
+            isSetupOverlayVisible() ||
             el.modals.shortcuts.root.style.display === 'flex' ||
             el.modals.routine.root.style.display === 'flex' ||
             el.modals.holidays.root.style.display === 'flex' ||
@@ -140,6 +150,12 @@ export function wireKeyboard(ctx: WiringContext): void {
                     }
                 }
             }
+            return;
+        }
+
+        // 日付が設定されていない（セットアップ未完了）場合はショートカットを処理しない
+        const currentDate = ctx.store.ui.getState().currentDate;
+        if (!currentDate) {
             return;
         }
 

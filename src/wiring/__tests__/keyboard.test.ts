@@ -97,4 +97,36 @@ describe('wireKeyboard double-trigger guard', () => {
         await window.onkeydown!(event3);
         expect(dispatchActionCalls).toBe(2);
     });
+
+    it('セットアップ画面（overlay）が表示中の場合、ショートカットキーが無視されること', async () => {
+        const setupOverlay = document.createElement('div');
+        setupOverlay.style.display = 'flex';
+        const { el } = await import('@/core/el');
+        (el as any).setup = { overlay: setupOverlay };
+
+        wireKeyboard(mockCtx);
+
+        const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
+        await window.onkeydown!(event);
+
+        expect(dispatchActionCalls).toBe(0);
+
+        // モックをリセット
+        (el as any).setup = { overlay: null };
+    });
+
+    it('currentDate が空（セットアップ未完了）の場合、左右キー等のショートカットが無視されること', async () => {
+        mockCtx.store.ui.getState = () => ({ currentDate: '', activeTaskId: null }) as any;
+
+        wireKeyboard(mockCtx);
+
+        const eventLeft = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
+        await window.onkeydown!(eventLeft);
+        expect(dispatchActionCalls).toBe(0);
+
+        const eventRight = new KeyboardEvent('keydown', { key: 'ArrowRight' });
+        await window.onkeydown!(eventRight);
+        expect(dispatchActionCalls).toBe(0);
+    });
 });
+
