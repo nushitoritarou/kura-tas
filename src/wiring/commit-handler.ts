@@ -79,7 +79,7 @@ export function wireCommitHandler(ctx: WiringContext) {
                 setTimeout(() => {
                     const activeEl = el.tasks.list.querySelector(`.task-item[data-id="${uiState.activeTaskId}"]`);
                     if (activeEl) {
-                        activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        activeEl.scrollIntoView({ block: 'nearest', behavior: 'auto' });
                     }
                 }, 0);
             }
