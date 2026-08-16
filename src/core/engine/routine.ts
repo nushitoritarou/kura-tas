@@ -117,11 +117,6 @@ export function computeMissingRoutineTasks(
             continue;
         }
 
-        // すでに existingTasks に routineId === m.id があるかチェック
-        if (existingTasks.some(t => t.routineId === m.id)) {
-            continue;
-        }
-
         const adjustment = m.holiday_adjustment || 'skip';
 
         // 1. 本来の日付で営業日の場合
@@ -173,6 +168,19 @@ export function computeMissingRoutineTasks(
         }
 
         if (shouldGenerate) {
+            // 1. すでにマスタの generatedDates に本来の予定日が含まれているかチェック
+            if (m.generatedDates && m.generatedDates.includes(originalDateStr)) {
+                continue;
+            }
+
+            // 2. メモリ上（既存ロード済みタスク）に routineId と originalDate が一致するタスクが存在するかチェック
+            const alreadyExists = existingTasks.some(t => 
+                t.routineId === m.id && (t.originalDate || t.date) === originalDateStr
+            );
+            if (alreadyExists) {
+                continue;
+            }
+
             const task = createTask(m.text, date);
             task.routineId = m.id;
             task.originalDate = originalDateStr; // 本来の予定日を設定
