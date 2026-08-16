@@ -214,7 +214,7 @@ export async function generateTasksFromRoutine(
     if (date < today) return;
 
     const masters = deps.routine.getState();
-    const existingTasks = deps.tasks.getState().filter(t => t.date === date);
+    const existingTasks = deps.tasks.getState();
 
     const config = deps.config.getState();
     const workDays = config.workDays || [1, 2, 3, 4, 5];
@@ -224,6 +224,23 @@ export async function generateTasksFromRoutine(
 
     if (newTasks.length > 0) {
         await deps.tasks.addMany(newTasks);
+
+        // 生成されたタスクの originalDate をマスタの generatedDates に記録（今日より前の日付はトリム）
+        for (const task of newTasks) {
+            if (!task.routineId || !task.originalDate) continue;
+            const master = deps.routine.getState().find(m => m.id === task.routineId);
+            if (master) {
+                const currentGen = master.generatedDates || [];
+                if (!currentGen.includes(task.originalDate)) {
+                    const cleanedGen = currentGen.filter(d => d >= today);
+                    const updatedGen = [...cleanedGen, task.originalDate];
+                    await deps.routine.update({
+                        ...master,
+                        generatedDates: updatedGen
+                    });
+                }
+            }
+        }
 
         // テンプレートノートの自動生成
         const notePromises: Promise<any>[] = [];

@@ -36,6 +36,31 @@ describe('routineEngine', () => {
             expect(result[0].routineId).toBe('2');
         });
 
+        it('手動で別の日付に移動済みのタスク（originalDateが元の予定日）が存在する場合は生成しないこと', () => {
+            const date = '2026-06-08';
+            const existingTasks: Task[] = [
+                { id: 'a', text: 'Daily Task', done: false, originalDate: '2026-06-08', date: '2026-06-09', routineId: '1' }
+            ];
+            const result = computeMissingRoutineTasks(masters, existingTasks, date);
+            
+            expect(result).toHaveLength(1);
+            expect(result[0].text).toBe('Mon Task');
+            expect(result[0].routineId).toBe('2');
+        });
+
+        it('マスタの generatedDates に本来の予定日が含まれる場合は生成しないこと', () => {
+            const date = '2026-06-08';
+            const mastersWithGen: RoutineTask[] = [
+                { id: '1', text: 'Daily Task', schedule: { type: 'weekly', days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] }, generatedDates: ['2026-06-08'] },
+                { id: '2', text: 'Mon Task', schedule: { type: 'weekly', days: ['Mon'] } },
+            ];
+            const result = computeMissingRoutineTasks(mastersWithGen, [], date);
+            
+            expect(result).toHaveLength(1);
+            expect(result[0].text).toBe('Mon Task');
+            expect(result[0].routineId).toBe('2');
+        });
+
         it('祝日かつスキップルールの場合は生成しないこと', () => {
             const date = '2026-06-08'; // Monday
             const testMasters: RoutineTask[] = [
