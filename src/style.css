@@ -20,6 +20,7 @@
             --muted-foreground: #AAAAAA;
             --accent: #3399FF15;
             --accent-foreground: #000000;         /* キーワードブルー */
+            --warning: #C97A2B;
             --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
         }
 
@@ -79,6 +80,9 @@
             display: flex;
             gap: 4px;
         }
+        /* --- 日付表示（休日・非稼働日の識別） --- */
+        #current-date-display.date-holiday { color: var(--destructive); }
+        #current-date-display.date-off { color: var(--warning); }
         .task-list { flex: 1; padding: 10px; }
         
         .task-item {

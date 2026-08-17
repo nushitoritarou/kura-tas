@@ -3,14 +3,40 @@
  */
 
 /**
- * 表示用の日付文字列を生成する (例: 2026-05-31 (日))
+ * 日付の稼働状態を表す種別
+ * work: 通常の稼働日 / holiday: 個別指定された休日 / off: 稼働日設定に含まれない曜日
  */
-export function formatCurrentDate(dateStr: string): string {
+export type DateDisplayStatus = 'work' | 'holiday' | 'off';
+
+/**
+ * 指定日が稼働日/休日/非稼働日のいずれかを判定する
+ */
+export function getDateDisplayStatus(
+    dateStr: string,
+    workDays: number[] = [1, 2, 3, 4, 5],
+    holidays: string[] = []
+): DateDisplayStatus {
+    if (holidays.includes(dateStr)) {
+        return 'holiday';
+    }
+    // タイムゾーン問題を避けるため、時刻を指定してローカルとしてパースする
+    const d = new Date(`${dateStr}T00:00:00`);
+    if (!workDays.includes(d.getDay())) {
+        return 'off';
+    }
+    return 'work';
+}
+
+/**
+ * 表示用の日付文字列を生成する (例: 2026-05-31 (日)、休日/非稼働日はラベル付き)
+ */
+export function formatCurrentDate(dateStr: string, status: DateDisplayStatus = 'work'): string {
     // タイムゾーン問題を避けるため、時刻を指定してローカルとしてパースする
     const d = new Date(`${dateStr}T00:00:00`);
     const days = ['日', '月', '火', '水', '木', '金', '土'];
     const dayName = days[d.getDay()];
-    return `${dateStr} (${dayName})`;
+    const label = status === 'holiday' ? ' [休日]' : status === 'off' ? ' [非稼働日]' : '';
+    return `${dateStr} (${dayName})${label}`;
 }
 
 export type ContextMenuItem = 

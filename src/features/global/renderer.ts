@@ -36,10 +36,17 @@ export function displayVersion(version: string, isDebug: boolean, commitHash: st
 }
 
 /**
- * 日付表示を更新する
+ * 日付表示を更新する（休日・非稼働日の場合はラベルとスタイルを付与する）
  */
-export function updateDateDisplay(dateStr: string): void {
-    el.nav.dateDisplay.textContent = ui.formatCurrentDate(dateStr);
+export function updateDateDisplay(
+    dateStr: string,
+    workDays: number[] = [1, 2, 3, 4, 5],
+    holidays: string[] = []
+): void {
+    const status = ui.getDateDisplayStatus(dateStr, workDays, holidays);
+    el.nav.dateDisplay.textContent = ui.formatCurrentDate(dateStr, status);
+    el.nav.dateDisplay.classList.toggle('date-holiday', status === 'holiday');
+    el.nav.dateDisplay.classList.toggle('date-off', status === 'off');
 }
 
 /**

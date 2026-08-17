@@ -9,6 +9,30 @@ describe('features/global/ui', () => {
         expect(ui.formatCurrentDate('2026-06-02')).toBe('2026-06-02 (火)');
     });
 
+    it('formatCurrentDate appends a label when the date is a holiday or off day', () => {
+        expect(ui.formatCurrentDate('2026-06-01', 'work')).toBe('2026-06-01 (月)');
+        expect(ui.formatCurrentDate('2026-06-01', 'holiday')).toBe('2026-06-01 (月) [休日]');
+        expect(ui.formatCurrentDate('2026-05-31', 'off')).toBe('2026-05-31 (日) [非稼働日]');
+    });
+
+    describe('getDateDisplayStatus', () => {
+        it('returns "work" for a normal work day', () => {
+            expect(ui.getDateDisplayStatus('2026-06-01', [1, 2, 3, 4, 5], [])).toBe('work');
+        });
+
+        it('returns "off" for a day not included in workDays', () => {
+            expect(ui.getDateDisplayStatus('2026-05-31', [1, 2, 3, 4, 5], [])).toBe('off'); // 日曜
+        });
+
+        it('returns "holiday" when the date is explicitly listed as a holiday, even on a work day', () => {
+            expect(ui.getDateDisplayStatus('2026-06-01', [1, 2, 3, 4, 5], ['2026-06-01'])).toBe('holiday');
+        });
+
+        it('prioritizes "holiday" over "off" when both apply', () => {
+            expect(ui.getDateDisplayStatus('2026-05-31', [1, 2, 3, 4, 5], ['2026-05-31'])).toBe('holiday');
+        });
+    });
+
     it('generateContextMenuHtml returns menu item elements as string', () => {
         const items: ui.ContextMenuItem[] = [
             { label: 'Item 1', action: () => {} },
