@@ -5,6 +5,7 @@ import * as tasksLogic from '@/features/tasks/logic';
 import * as routineLogic from '@/features/routine/logic';
 import * as routineRenderer from '@/features/routine/renderer';
 import * as holidaysRenderer from '@/features/holidays/renderer';
+import * as aiMemoRenderer from '@/features/aiMemo/renderer';
 import { handleSaveNote, switchToEditMode } from './notes';
 import { WiringContext } from './context';
 
@@ -42,6 +43,7 @@ export function wireKeyboard(ctx: WiringContext): void {
             el.modals.shortcuts?.root?.style?.display === 'flex' ||
             el.modals.routine?.root?.style?.display === 'flex' ||
             el.modals.holidays?.root?.style?.display === 'flex' ||
+            el.modals.aiMemo?.root?.style?.display === 'flex' ||
             el.modals.import?.root?.style?.display === 'flex' ||
             el.modals.quickAdd?.root?.style?.display === 'flex' ||
             globalRenderer.isTaskEditModalShown()
@@ -68,6 +70,8 @@ export function wireKeyboard(ctx: WiringContext): void {
                     targetToFocus = el.modals.routine.root;
                 } else if (el.modals.holidays?.root?.style?.display === 'flex') {
                     targetToFocus = el.modals.holidays.root;
+                } else if (el.modals.aiMemo?.root?.style?.display === 'flex') {
+                    targetToFocus = el.modals.aiMemo.root;
                 } else if (el.modals.import?.root?.style?.display === 'flex' || el.modals.import?.root?.style?.display === 'block') {
                     targetToFocus = el.modals.import.root;
                 } else if (el.modals.quickAdd?.root?.style?.display === 'flex') {
@@ -115,6 +119,11 @@ export function wireKeyboard(ctx: WiringContext): void {
             // 休日設定モーダルが開いていたら閉じる
             if (el.modals.holidays?.root?.style?.display === 'flex') {
                 holidaysRenderer.toggleHolidaysModal(false);
+                e.preventDefault();
+            }
+            // AIメモモーダルが開いていたら閉じる
+            if (el.modals.aiMemo?.root?.style?.display === 'flex') {
+                aiMemoRenderer.toggleAiMemoModal(false);
                 e.preventDefault();
             }
             // インポートモーダルが開いていたら閉じる

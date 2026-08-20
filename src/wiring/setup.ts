@@ -3,6 +3,7 @@ import { logger, configureLogger } from '@/core/logger';
 import * as globalLogic from '@/features/global/logic';
 import * as globalRenderer from '@/features/global/renderer';
 import * as routineLogic from '@/features/routine/logic';
+import { writeAiContextFile } from '@/core/store/aiContext';
 import { el } from '@/core/el';
 import { WiringContext } from './context';
 
@@ -23,6 +24,8 @@ export async function wireSetup(ctx: WiringContext, onReady: () => Promise<void>
                     // ストレージ初期化後に設定がロードされるため、再度Loggerを構成
                     configureLogger(ctx.store.config.getState());
                     await routineLogic.generateTasksFromRoutine(ctx.store.ui.getState().currentDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config, notes: ctx.store.notes });
+                    // AIエージェント向けのデータ構造説明ファイルを生成・更新する
+                    await writeAiContextFile(ctx.store.ui.getState().version, ctx.store.config.getState());
                 }, { recordHistory: false });
                 ctx.store.resetHistory(); // 起動直後の状態を「原点」にする
                 globalRenderer.showAppContainer();
@@ -45,6 +48,8 @@ export async function wireSetup(ctx: WiringContext, onReady: () => Promise<void>
                         // ストレージ初期化後に設定がロードされるため、再度Loggerを構成
                         configureLogger(ctx.store.config.getState());
                         await routineLogic.generateTasksFromRoutine(ctx.store.ui.getState().currentDate, { routine: ctx.store.routine, tasks: ctx.store.tasks, config: ctx.store.config, notes: ctx.store.notes });
+                        // AIエージェント向けのデータ構造説明ファイルを生成・更新する
+                        await writeAiContextFile(ctx.store.ui.getState().version, ctx.store.config.getState());
                     }, { recordHistory: false });
                     ctx.store.resetHistory(); // 起動直後の状態を「原点」にする
                     globalRenderer.showAppContainer();
