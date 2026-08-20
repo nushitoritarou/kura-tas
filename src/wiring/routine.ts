@@ -104,6 +104,6 @@ export function wireRoutine(ctx: WiringContext): void {
     };
 
     el.modals.routine.btnClose.onclick = () => {
-        el.modals.routine.root.style.display = 'none';
+        routineRenderer.toggleRoutineModal(false);
     };
 }

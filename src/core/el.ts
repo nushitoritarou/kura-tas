@@ -21,12 +21,15 @@ export const el = {
   // ナビゲーション
   nav: {
     dateDisplay: document.getElementById('current-date-display') as HTMLElement,
+    dateText: document.getElementById('date-text') as HTMLElement,
+    dateStatusBadge: document.getElementById('date-status-badge') as HTMLElement,
     btnPrevDay: document.getElementById('btn-prev-day') as HTMLElement,
     btnNextDay: document.getElementById('btn-next-day') as HTMLElement,
     btnToday: document.getElementById('nav-today') as HTMLElement,
     btnUndo: document.getElementById('btn-undo') as HTMLButtonElement,
     btnRedo: document.getElementById('btn-redo') as HTMLButtonElement,
     btnHolidays: document.getElementById('nav-holidays') as HTMLElement,
+    btnAiMemo: document.getElementById('nav-ai-memo') as HTMLElement,
     btnShortcuts: document.getElementById('nav-shortcuts') as HTMLElement,
     btnRoutine: document.getElementById('nav-routine') as HTMLElement,
     btnImport: document.getElementById('nav-import') as HTMLElement,
@@ -110,6 +113,12 @@ export const el = {
     shortcuts: {
       root: document.getElementById('modal-shortcuts') as HTMLElement,
       btnClose: document.getElementById('btn-close-shortcuts') as HTMLElement,
+    },
+    aiMemo: {
+      root: document.getElementById('modal-ai-memo') as HTMLElement,
+      input: document.getElementById('ai-memo-input') as HTMLTextAreaElement,
+      btnSave: document.getElementById('btn-save-ai-memo') as HTMLElement,
+      btnClose: document.getElementById('btn-close-ai-memo') as HTMLElement,
     },
     quickAdd: {
       root: document.getElementById('modal-quick-add') as HTMLElement,

@@ -6,6 +6,7 @@ import { Task } from '@/types';
 import * as ui from './ui';
 import { getTodayStr } from '@/core/engine/datetime';
 import { patch } from '@/shared/utils/dom/diff';
+import { registerModal } from '@/shared/utils/dom/modal';
 
 /**
  * タスクリストをレンダリングする
@@ -23,4 +24,18 @@ export function updateCarryOverButtonVisibility(currentDate: string): void {
     if (btnCarryOver) {
         btnCarryOver.style.display = currentDate === getTodayStr() ? 'inline-block' : 'none';
     }
+}
+
+const importModal = registerModal(el.modals.import.root);
+
+/** インポートモーダルの表示状態を切り替える */
+export function toggleImportModal(show: boolean): void {
+    if (show) importModal.open(); else importModal.close();
+}
+
+const quickAddModal = registerModal(el.modals.quickAdd.root);
+
+/** クイックタスク追加モーダルの表示状態を切り替える */
+export function toggleQuickAddModal(show: boolean): void {
+    if (show) quickAddModal.open(); else quickAddModal.close();
 }

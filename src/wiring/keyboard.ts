@@ -2,9 +2,8 @@ import { el } from '@/core/el';
 import * as globalLogic from '@/features/global/logic';
 import * as globalRenderer from '@/features/global/renderer';
 import * as tasksLogic from '@/features/tasks/logic';
+import * as tasksRenderer from '@/features/tasks/renderer';
 import * as routineLogic from '@/features/routine/logic';
-import * as routineRenderer from '@/features/routine/renderer';
-import * as holidaysRenderer from '@/features/holidays/renderer';
 import { handleSaveNote, switchToEditMode } from './notes';
 import { WiringContext } from './context';
 
@@ -37,15 +36,7 @@ export function wireKeyboard(ctx: WiringContext): void {
     };
 
     const isAnyModalOpen = (): boolean => {
-        return (
-            isSetupOverlayVisible() ||
-            el.modals.shortcuts?.root?.style?.display === 'flex' ||
-            el.modals.routine?.root?.style?.display === 'flex' ||
-            el.modals.holidays?.root?.style?.display === 'flex' ||
-            el.modals.import?.root?.style?.display === 'flex' ||
-            el.modals.quickAdd?.root?.style?.display === 'flex' ||
-            globalRenderer.isTaskEditModalShown()
-        );
+        return isSetupOverlayVisible() || globalRenderer.isAnyModalOpen();
     };
 
     const getNextActiveTaskId = (activeId: string): string | null => {
@@ -62,21 +53,8 @@ export function wireKeyboard(ctx: WiringContext): void {
             const active = document.activeElement;
 
             if (active && (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement)) {
-                // 開いているモーダルがあるか判定し、そのルートにフォーカスを移す
-                let targetToFocus: HTMLElement | null = null;
-                if (el.modals.routine?.root?.style?.display === 'flex') {
-                    targetToFocus = el.modals.routine.root;
-                } else if (el.modals.holidays?.root?.style?.display === 'flex') {
-                    targetToFocus = el.modals.holidays.root;
-                } else if (el.modals.import?.root?.style?.display === 'flex' || el.modals.import?.root?.style?.display === 'block') {
-                    targetToFocus = el.modals.import.root;
-                } else if (el.modals.quickAdd?.root?.style?.display === 'flex') {
-                    targetToFocus = el.modals.quickAdd.root;
-                } else if (globalRenderer.isTaskEditModalShown()) {
-                    targetToFocus = el.modals.editTask.root;
-                } else if (globalRenderer.isShortcutsModalShown()) {
-                    targetToFocus = el.modals.shortcuts.root;
-                }
+                // 開いているモーダル（最前面のもの）があれば、そのルートにフォーカスを移す
+                const targetToFocus = globalRenderer.getTopModalRoot();
 
                 if (targetToFocus) {
                     targetToFocus.focus();
@@ -102,34 +80,8 @@ export function wireKeyboard(ctx: WiringContext): void {
                 e.preventDefault();
                 return;
             }
-            // ショートカットモーダルが開いていたら閉じる
-            if (globalRenderer.isShortcutsModalShown()) {
-                globalRenderer.toggleShortcutsModal(false);
-                e.preventDefault();
-            }
-            // 定期タスクモーダルが開いていたら閉じる
-            if (el.modals.routine?.root?.style?.display === 'flex') {
-                routineRenderer.toggleRoutineModal(false);
-                e.preventDefault();
-            }
-            // 休日設定モーダルが開いていたら閉じる
-            if (el.modals.holidays?.root?.style?.display === 'flex') {
-                holidaysRenderer.toggleHolidaysModal(false);
-                e.preventDefault();
-            }
-            // インポートモーダルが開いていたら閉じる
-            if (el.modals.import?.root?.style?.display === 'flex') {
-                el.modals.import.root.style.display = 'none';
-                e.preventDefault();
-            }
-            // クイックタスク追加モーダルが開いていたら閉じる
-            if (el.modals.quickAdd?.root?.style?.display === 'flex') {
-                el.modals.quickAdd.root.style.display = 'none';
-                e.preventDefault();
-            }
-            // タスク編集モーダルが開いていたら閉じる
-            if (globalRenderer.isTaskEditModalShown()) {
-                globalRenderer.cancelTaskEditModal();
+            // 開いているモーダル（最前面のもの）があれば閉じる
+            if (globalRenderer.closeTopModal()) {
                 e.preventDefault();
             }
 
@@ -385,7 +337,7 @@ export function wireKeyboard(ctx: WiringContext): void {
                 globalRenderer.toggleShortcutsModal(!isShown);
             } else if (e.key === 'o') {
                 e.preventDefault();
-                el.modals.quickAdd.root.style.display = 'flex';
+                tasksRenderer.toggleQuickAddModal(true);
                 el.modals.quickAdd.input.value = '';
                 setTimeout(() => {
                     el.modals.quickAdd.input.focus();

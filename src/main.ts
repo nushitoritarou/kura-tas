@@ -16,6 +16,7 @@ import { wireTasks } from '@/wiring/tasks';
 import { wireNotes } from '@/wiring/notes';
 import { wireRoutine } from '@/wiring/routine';
 import { wireHolidays } from '@/wiring/holidays';
+import { wireAiMemo } from '@/wiring/aiMemo';
 import { wireModals } from '@/wiring/modals';
 import { wireKeyboard } from '@/wiring/keyboard';
 import { wireDayWatch } from '@/wiring/day-watch';
@@ -55,6 +56,7 @@ async function bootstrap() {
     wireNotes(ctx);
     wireRoutine(ctx);
     wireHolidays(ctx);
+    wireAiMemo(ctx);
     wireModals(ctx);
     wireKeyboard(ctx);
     wireDayWatch(ctx);

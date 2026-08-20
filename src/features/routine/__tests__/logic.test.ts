@@ -270,8 +270,9 @@ describe('routine logic', () => {
     });
 
     describe('generateTasksFromRoutine', () => {
-        it('マスタに基づいてタスクを生成すること', async () => {
-            routine.getState = vi.fn().mockReturnValue([{ id: '1', text: 'Periodic', schedule: { type: 'weekly', days: ['Mon'] } }]);
+        it('マスタに基づいてタスクを生成し、generatedDates を更新すること', async () => {
+            const master = { id: '1', text: 'Periodic', schedule: { type: 'weekly' as const, days: ['Mon' as const] } };
+            routine.getState = vi.fn().mockReturnValue([master]);
             // 2026-06-08 is Monday
             await generateTasksFromRoutine('2026-06-08', { routine, tasks, config, notes });
             expect(tasks.addMany).toHaveBeenCalled();
@@ -280,6 +281,18 @@ describe('routine logic', () => {
             expect(saved[0].text).toBe('Periodic');
             expect(saved[0].routineId).toBe('1');
             expect(saved[0].originalDate).toBe('2026-06-08');
+
+            expect(routine.update).toHaveBeenCalledWith({
+                ...master,
+                generatedDates: ['2026-06-08']
+            });
+        });
+
+        it('既に generatedDates に本来の予定日が含まれる場合は再生成しないこと', async () => {
+            const master = { id: '1', text: 'Periodic', schedule: { type: 'weekly' as const, days: ['Mon' as const] }, generatedDates: ['2026-06-08'] };
+            routine.getState = vi.fn().mockReturnValue([master]);
+            await generateTasksFromRoutine('2026-06-08', { routine, tasks, config, notes });
+            expect(tasks.addMany).not.toHaveBeenCalled();
         });
 
         it('過去日の場合は生成しないこと', async () => {

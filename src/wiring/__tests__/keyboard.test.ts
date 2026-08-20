@@ -13,6 +13,7 @@ vi.mock('@/core/el', () => ({
             shortcuts: { root: { style: { display: 'none' } } },
             routine: { root: { style: { display: 'none' } } },
             holidays: { root: { style: { display: 'none' } } },
+            aiMemo: { root: { style: { display: 'none' } } },
             import: { root: { style: { display: 'none' } } },
             quickAdd: { root: { style: { display: 'none' }, input: { value: '', focus: vi.fn() } } },
             editTask: { root: { style: { display: 'none' }, input: { value: '', focus: vi.fn(), setSelectionRange: vi.fn(), select: vi.fn() }, btnSubmit: {}, btnClose: {} } }
@@ -151,6 +152,23 @@ describe('wireKeyboard double-trigger guard', () => {
         await window.onkeydown!(event);
 
         expect(mockCtx.store.ui.update).toHaveBeenCalledWith({ activeTaskId: null });
+    });
+
+    it('AIメモモーダルが開いている場合、Esc を押すと閉じること', async () => {
+        const { el } = await import('@/core/el');
+        // aiMemo/renderer.ts を評価させ、modalController への登録（registerModal）を行わせる
+        const aiMemoRenderer = await import('@/features/aiMemo/renderer');
+        aiMemoRenderer.toggleAiMemoModal(true);
+
+        wireKeyboard(mockCtx);
+
+        const event = new KeyboardEvent('keydown', { key: 'Escape' });
+        await window.onkeydown!(event);
+
+        expect((el.modals as any).aiMemo.root.style.display).toBe('none');
+
+        // 状態を元に戻す
+        (el.modals as any).aiMemo.root.style.display = 'none';
     });
 
     it('タスク選択時に S キーを押すとソート処理が実行されること', async () => {
