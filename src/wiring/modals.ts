@@ -17,7 +17,7 @@ export function wireModals(_ctx: WiringContext): void {
         }
     };
 
-    [el.modals.import.root, el.modals.routine.root, el.modals.holidays.root, el.modals.quickAdd.root].forEach(m => {
+    [el.modals.import.root, el.modals.routine.root, el.modals.holidays.root, el.modals.aiMemo.root, el.modals.quickAdd.root].forEach(m => {
         m.onclick = (e) => {
             if (e.target === m) m.style.display = 'none';
         };

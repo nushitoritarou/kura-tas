@@ -58,6 +58,7 @@ export interface Config {
   logFilePath?: string;
   workDays?: number[]; // 営業日の曜日配列 (0:日, 1:月, ... 6:土)
   holidays?: string[]; // 特定の祝日・休日の日付配列 ("YYYY-MM-DD"形式)
+  aiMemo?: string; // ユーザーから外部AIエージェントへのメモ（AI_CONTEXT.md に埋め込まれる）
 }
 
 export type DayOfWeekStr = 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat';
