@@ -1,5 +1,6 @@
 import { el } from '@/core/el';
 import * as ui from './ui';
+import { registerModal, isAnyModalOpen as isAnyRegisteredModalOpen, closeTopModal as closeTopRegisteredModal, getTopModalRoot as getTopRegisteredModalRoot } from '@/shared/utils/dom/modal';
 
 /**
  * GlobalなUI操作の手続き（副作用あり）
@@ -141,35 +142,37 @@ export function notifyError(message: string): void {
     alert(message);
 }
 
+const shortcutsModal = registerModal(el.modals.shortcuts.root);
+
 /**
  * ショートカットモーダルの表示状態を切り替える
  */
 export function toggleShortcutsModal(show: boolean): void {
-    el.modals.shortcuts.root.style.display = show ? 'flex' : 'none';
+    if (show) shortcutsModal.open(); else shortcutsModal.close();
 }
 
 /**
  * ショートカットモーダルが表示されているか判定する
  */
 export function isShortcutsModalShown(): boolean {
-    return el.modals.shortcuts.root.style.display === 'flex';
+    return shortcutsModal.isOpen();
 }
 
-let currentTaskEditModalCancel: (() => void) | null = null;
+const editTaskModal = registerModal(el.modals.editTask.root);
 
 /**
  * タスク編集モーダルが表示されているか判定する
  */
 export function isTaskEditModalShown(): boolean {
-    return Boolean(el.modals.editTask?.root && el.modals.editTask.root.style.display === 'flex');
+    return editTaskModal.isOpen();
 }
 
 /**
  * タスク編集モーダルをキャンセルして閉じる
  */
 export function cancelTaskEditModal(): void {
-    if (currentTaskEditModalCancel) {
-        currentTaskEditModalCancel();
+    if (editTaskModal.isOpen()) {
+        editTaskModal.close();
     }
 }
 
@@ -181,18 +184,16 @@ export function cancelTaskEditModal(): void {
  *  'c': テキストを全選択
  */
 export function showTaskEditModal(initialText: string, mode: 'i' | 'a' | 'A' | 'c' = 'a'): Promise<string | null> {
-    if (currentTaskEditModalCancel) {
-        currentTaskEditModalCancel();
+    if (editTaskModal.isOpen()) {
+        editTaskModal.close();
     }
 
     return new Promise((resolve) => {
-        const root = el.modals.editTask.root;
         const input = el.modals.editTask.input;
         const btnSubmit = el.modals.editTask.btnSubmit;
         const btnClose = el.modals.editTask.btnClose;
 
         input.value = initialText;
-        root.style.display = 'flex';
 
         const applyFocus = () => {
             input.focus();
@@ -216,17 +217,16 @@ export function showTaskEditModal(initialText: string, mode: 'i' | 'a' | 'A' | '
         }
 
         const cleanup = () => {
-            root.style.display = 'none';
             btnSubmit.onclick = null;
             btnClose.onclick = null;
-            root.onclick = null;
             input.onkeydown = null;
-            currentTaskEditModalCancel = null;
         };
 
         const handleSave = () => {
             const val = input.value;
             cleanup();
+            editTaskModal.setOnClose(undefined);
+            editTaskModal.close();
             resolve(val);
         };
 
@@ -235,15 +235,11 @@ export function showTaskEditModal(initialText: string, mode: 'i' | 'a' | 'A' | '
             resolve(null);
         };
 
-        currentTaskEditModalCancel = handleCancel;
+        editTaskModal.setOnClose(handleCancel);
+        editTaskModal.open();
 
         btnSubmit.onclick = handleSave;
-        btnClose.onclick = handleCancel;
-        root.onclick = (e) => {
-            if (e.target === root) {
-                handleCancel();
-            }
-        };
+        btnClose.onclick = () => editTaskModal.close();
 
         input.onkeydown = (e) => {
             if (e.isComposing) return;
@@ -253,10 +249,26 @@ export function showTaskEditModal(initialText: string, mode: 'i' | 'a' | 'A' | '
             } else if (e.key === 'Escape') {
                 e.preventDefault();
                 e.stopPropagation();
-                handleCancel();
+                editTaskModal.close();
             }
         };
     });
 }
 
+/**
+ * 登録済みのいずれかのモーダルが開いているか判定する
+ * (wiring層は shared/utils/dom を直接参照できないため、renderer 経由で公開する)
+ */
+export function isAnyModalOpen(): boolean {
+    return isAnyRegisteredModalOpen();
+}
 
+/** 最前面（最後に開かれた）モーダルの root 要素を取得する */
+export function getTopModalRoot(): HTMLElement | null {
+    return getTopRegisteredModalRoot();
+}
+
+/** 最前面のモーダルを閉じる。閉じるモーダルが無ければ false を返す */
+export function closeTopModal(): boolean {
+    return closeTopRegisteredModal();
+}

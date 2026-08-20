@@ -156,7 +156,9 @@ describe('wireKeyboard double-trigger guard', () => {
 
     it('AIメモモーダルが開いている場合、Esc を押すと閉じること', async () => {
         const { el } = await import('@/core/el');
-        (el.modals as any).aiMemo.root.style.display = 'flex';
+        // aiMemo/renderer.ts を評価させ、modalController への登録（registerModal）を行わせる
+        const aiMemoRenderer = await import('@/features/aiMemo/renderer');
+        aiMemoRenderer.toggleAiMemoModal(true);
 
         wireKeyboard(mockCtx);
 

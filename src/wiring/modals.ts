@@ -2,6 +2,8 @@ import { el } from '@/core/el';
 import * as globalRenderer from '@/features/global/renderer';
 import { WiringContext } from './context';
 
+// オーバーレイクリックでの close は各 renderer 内の registerModal (src/shared/utils/dom/modal.ts) が自動配線するため、
+// ここではボタン操作の紐付けのみを行う。
 export function wireModals(_ctx: WiringContext): void {
     el.modals.shortcuts.btnClose.onclick = () => {
         globalRenderer.toggleShortcutsModal(false);
@@ -10,16 +12,4 @@ export function wireModals(_ctx: WiringContext): void {
     el.nav.btnShortcuts.onclick = () => {
         globalRenderer.toggleShortcutsModal(true);
     };
-
-    el.modals.shortcuts.root.onclick = (e) => {
-        if (e.target === el.modals.shortcuts.root) {
-            globalRenderer.toggleShortcutsModal(false);
-        }
-    };
-
-    [el.modals.import.root, el.modals.routine.root, el.modals.holidays.root, el.modals.aiMemo.root, el.modals.quickAdd.root].forEach(m => {
-        m.onclick = (e) => {
-            if (e.target === m) m.style.display = 'none';
-        };
-    });
 }
