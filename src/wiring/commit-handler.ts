@@ -24,7 +24,8 @@ function renderActiveNote(ctx: WiringContext, note: Note, isEditMode: boolean) {
 
 export async function initialRender(ctx: WiringContext) {
     const uiState = ctx.store.ui.getState();
-    globalRenderer.updateDateDisplay(uiState.currentDate);
+    const config = ctx.store.config.getState();
+    globalRenderer.updateDateDisplay(uiState.currentDate, config.workDays, config.holidays);
     inboxRenderer.renderInboxList(ctx.store.inboxItems.getAll());
     linksRenderer.renderLinks(ctx.store.commonLinks.getAll());
     const masters = await routineLogic.getMasters({ routine: ctx.store.routine });
@@ -53,8 +54,9 @@ export function wireCommitHandler(ctx: WiringContext) {
 
         if (!uiState.isAppReady) return;
 
-        if (dirty.has('ui') || dirty.has('tasks') || dirty.has('notes') || dirty.has('inboxItems') || dirty.has('commonLinks')) {
-            globalRenderer.updateDateDisplay(uiState.currentDate);
+        if (dirty.has('ui') || dirty.has('tasks') || dirty.has('notes') || dirty.has('inboxItems') || dirty.has('commonLinks') || dirty.has('config')) {
+            const config = ctx.store.config.getState();
+            globalRenderer.updateDateDisplay(uiState.currentDate, config.workDays, config.holidays);
         }
 
         if (dirty.has('inboxItems')) {

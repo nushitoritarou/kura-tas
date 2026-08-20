@@ -79,6 +79,21 @@
             display: flex;
             gap: 4px;
         }
+        /* --- 日付表示（休日・非稼働日の識別バッジ） --- */
+        #current-date-display { white-space: nowrap; }
+        .date-status-badge {
+            display: none;
+            flex-shrink: 0;
+            white-space: nowrap;
+            font-size: 10px;
+            font-weight: 600;
+            line-height: 1.5;
+            padding: 1px 7px;
+            border-radius: 999px;
+            letter-spacing: 0.02em;
+        }
+        .date-status-badge.holiday { color: var(--destructive); background: #AA373115; border: 1px solid #AA373140; }
+        .date-status-badge.off { color: var(--ring); background: #4B83CD15; border: 1px solid #4B83CD40; }
         .task-list { flex: 1; padding: 10px; }
         
         .task-item {
