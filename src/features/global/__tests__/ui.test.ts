@@ -9,10 +9,18 @@ describe('features/global/ui', () => {
         expect(ui.formatCurrentDate('2026-06-02')).toBe('2026-06-02 (火)');
     });
 
-    it('formatCurrentDate appends a label when the date is a holiday or off day', () => {
-        expect(ui.formatCurrentDate('2026-06-01', 'work')).toBe('2026-06-01 (月)');
-        expect(ui.formatCurrentDate('2026-06-01', 'holiday')).toBe('2026-06-01 (月) [休日]');
-        expect(ui.formatCurrentDate('2026-05-31', 'off')).toBe('2026-05-31 (日) [非稼働日]');
+    describe('getDateStatusLabel', () => {
+        it('returns an empty string for a work day', () => {
+            expect(ui.getDateStatusLabel('work')).toBe('');
+        });
+
+        it('returns "休日" for a holiday', () => {
+            expect(ui.getDateStatusLabel('holiday')).toBe('休日');
+        });
+
+        it('returns "非稼働日" for an off day', () => {
+            expect(ui.getDateStatusLabel('off')).toBe('非稼働日');
+        });
     });
 
     describe('getDateDisplayStatus', () => {

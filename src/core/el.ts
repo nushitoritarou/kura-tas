@@ -21,6 +21,8 @@ export const el = {
   // ナビゲーション
   nav: {
     dateDisplay: document.getElementById('current-date-display') as HTMLElement,
+    dateText: document.getElementById('date-text') as HTMLElement,
+    dateStatusBadge: document.getElementById('date-status-badge') as HTMLElement,
     btnPrevDay: document.getElementById('btn-prev-day') as HTMLElement,
     btnNextDay: document.getElementById('btn-next-day') as HTMLElement,
     btnToday: document.getElementById('nav-today') as HTMLElement,

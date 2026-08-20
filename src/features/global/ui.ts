@@ -28,15 +28,23 @@ export function getDateDisplayStatus(
 }
 
 /**
- * 表示用の日付文字列を生成する (例: 2026-05-31 (日)、休日/非稼働日はラベル付き)
+ * 表示用の日付文字列を生成する (例: 2026-05-31 (日))
  */
-export function formatCurrentDate(dateStr: string, status: DateDisplayStatus = 'work'): string {
+export function formatCurrentDate(dateStr: string): string {
     // タイムゾーン問題を避けるため、時刻を指定してローカルとしてパースする
     const d = new Date(`${dateStr}T00:00:00`);
     const days = ['日', '月', '火', '水', '木', '金', '土'];
     const dayName = days[d.getDay()];
-    const label = status === 'holiday' ? ' [休日]' : status === 'off' ? ' [非稼働日]' : '';
-    return `${dateStr} (${dayName})${label}`;
+    return `${dateStr} (${dayName})`;
+}
+
+/**
+ * 日付の稼働状態に応じたバッジ用の短いラベルを返す（稼働日の場合は空文字）
+ */
+export function getDateStatusLabel(status: DateDisplayStatus): string {
+    if (status === 'holiday') return '休日';
+    if (status === 'off') return '非稼働日';
+    return '';
 }
 
 export type ContextMenuItem = 
