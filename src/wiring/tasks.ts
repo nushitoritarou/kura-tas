@@ -1,5 +1,6 @@
 import { el } from '@/core/el';
 import * as tasksLogic from '@/features/tasks/logic';
+import * as tasksRenderer from '@/features/tasks/renderer';
 import * as notesLogic from '@/features/notes/logic';
 import * as routineLogic from '@/features/routine/logic';
 import * as routineRenderer from '@/features/routine/renderer';
@@ -182,7 +183,7 @@ export function wireTasks(ctx: WiringContext): void {
     const btnNavImport = el.nav.btnImport;
     if (btnNavImport) {
         btnNavImport.onclick = () => {
-            el.modals.import.root.style.display = 'flex';
+            tasksRenderer.toggleImportModal(true);
             el.modals.import.sampleContainer.style.display = 'none';
             el.modals.import.btnToggleSample.classList.remove('btn-primary');
             el.modals.import.format.value = 'auto';
@@ -210,7 +211,7 @@ export function wireTasks(ctx: WiringContext): void {
             await ctx.dispatchAction(async () => {
                 await tasksLogic.importTasks(jsonText, targetDate, format, ctx.store);
                 el.modals.import.area.value = '';
-                el.modals.import.root.style.display = 'none';
+                tasksRenderer.toggleImportModal(false);
             });
         } finally {
             isProcessing = false;
@@ -223,12 +224,12 @@ export function wireTasks(ctx: WiringContext): void {
     };
 
     el.modals.import.btnClose.onclick = () => {
-        el.modals.import.root.style.display = 'none';
+        tasksRenderer.toggleImportModal(false);
     };
 
     // Quick Add
     el.modals.quickAdd.btnClose.onclick = () => {
-        el.modals.quickAdd.root.style.display = 'none';
+        tasksRenderer.toggleQuickAddModal(false);
     };
 
     const handleDoQuickAdd = async () => {
@@ -245,7 +246,7 @@ export function wireTasks(ctx: WiringContext): void {
             await ctx.dispatchAction(async () => {
                 const newTask = await tasksLogic.addTask(text, currentDate, ctx.store);
                 ctx.store.ui.update({ activeTaskId: newTask.id });
-                el.modals.quickAdd.root.style.display = 'none';
+                tasksRenderer.toggleQuickAddModal(false);
                 el.modals.quickAdd.input.value = '';
             });
         } finally {

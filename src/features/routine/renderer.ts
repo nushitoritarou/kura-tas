@@ -2,6 +2,7 @@ import { RoutineTask, DAYS_MAP } from '@/types';
 import { createMasterListHtml, getFormTitle, getSubmitBtnLabel } from './ui';
 import { el } from '@/core/el';
 import { patch } from '@/shared/utils/dom/diff';
+import { registerModal } from '@/shared/utils/dom/modal';
 
 /** マスタ一覧を画面に反映する */
 export function renderMasterList(masters: RoutineTask[]): void {
@@ -9,9 +10,11 @@ export function renderMasterList(masters: RoutineTask[]): void {
     patch(el.modals.routine.list, html);
 }
 
+const routineModal = registerModal(el.modals.routine.root);
+
 /** モーダルの表示状態を切り替える */
 export function toggleRoutineModal(show: boolean): void {
-    el.modals.routine.root.style.display = show ? 'flex' : 'none';
+    if (show) routineModal.open(); else routineModal.close();
 }
 
 /** スケジュールタイプに応じてフォームフィールドの表示/非表示を切り替える */

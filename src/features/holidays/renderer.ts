@@ -1,12 +1,15 @@
 import { el } from '@/core/el';
 import { createHolidayListHtml } from './ui';
 import { patch } from '@/shared/utils/dom/diff';
+import { registerModal } from '@/shared/utils/dom/modal';
+
+const holidaysModal = registerModal(el.modals.holidays.root);
 
 /**
  * 休日設定モーダルの表示状態を切り替える
  */
 export function toggleHolidaysModal(show: boolean): void {
-    el.modals.holidays.root.style.display = show ? 'flex' : 'none';
+    if (show) holidaysModal.open(); else holidaysModal.close();
 }
 
 /**
